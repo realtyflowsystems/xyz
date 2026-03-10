@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<script>
+(function(){
+  var seg = window.location.pathname;
+  // Strip .html extension and redirect to clean URL
+  if (seg.endsWith('.html')) {
+    var clean = seg.slice(0, -5);
+    window.location.replace(clean + window.location.search + window.location.hash);
+  } else {
+    // True 404 — redirect home
+    window.location.replace('/');
+  }
+})();
+</script>
+</head>
+<body></body>
+</html>
