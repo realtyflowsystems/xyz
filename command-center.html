@@ -635,6 +635,52 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 
 <script>
 // ══════════════════════════════════════════════
+// ZAPIER WEBHOOK CONFIG
+// ══════════════════════════════════════════════
+const ZAPIER_HOOKS = {
+  'Audit Booked':    'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Audit Complete':  'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Proposal Sent':   'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Closed — Won':    'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Closed — Lost':   'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+};
+
+// SMS messages per stage
+const SMS_TEMPLATES = {
+  'Audit Booked':   (name) => `Hey ${name}, your RealtyFlow Revenue Audit is confirmed. Come ready with your monthly lead volume. See you then. — Erics`,
+  'Audit Complete': (name) => `Hey ${name}, great conversation today. I just sent over your custom offer comparison. Take a look and let me know if you have questions. — Erics`,
+  'Proposal Sent':  (name) => `Hey ${name}, just checking in on what I sent over. Any questions? Happy to jump on a quick call. — Erics`,
+  'Closed — Won':   (name) => `Hey ${name}, welcome to RealtyFlow Systems. You'll receive your portal access within 24 hours. Let's get your system live. — Erics`,
+  'Closed — Lost':  (name) => `Hey ${name}, circling back — market's moving fast in Greater Boston right now. Worth a fresh look at what's changed? — Erics`,
+};
+
+async function fireWebhook(stageName, lead) {
+  const hook = ZAPIER_HOOKS[stageName];
+  if (!hook || !lead.phone) return;
+  const smsBody = SMS_TEMPLATES[stageName] ? SMS_TEMPLATES[stageName](lead.fname) : null;
+  if (!smsBody) return;
+  try {
+    await fetch(hook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stage:      stageName,
+        first_name: lead.fname,
+        last_name:  lead.lname,
+        phone:      lead.phone,
+        email:      lead.email,
+        tier:       lead.tier || 'Unknown',
+        sms_body:   smsBody,
+        timestamp:  new Date().toISOString(),
+      })
+    });
+    toast('📱 SMS triggered → ' + lead.fname + ' (' + stageName + ')');
+  } catch(e) {
+    toast('⚠️ Webhook failed — check Zapier');
+  }
+}
+
+// ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
 const STAGES = [
@@ -736,7 +782,15 @@ function renderCard(lead, si) {
 function advanceLead(id) {
   const lead = leads.find(l=>l.id===id);
   if(!lead) return;
-  if(lead.stage < 7) { lead.stage++; save('leads',leads); renderPipeline(); toast('Lead advanced to: '+STAGES[lead.stage]); }
+  if(lead.stage < 7) {
+    lead.stage++;
+    save("leads", leads);
+    renderPipeline();
+    const stageName = STAGES[lead.stage];
+    toast("Lead advanced to: " + stageName);
+    if(lead.phone) { fireWebhook(stageName, lead); }
+    else { toast("⚠️ No phone — SMS skipped for " + lead.fname); }
+  }
 }
 
 function deleteLead() {
