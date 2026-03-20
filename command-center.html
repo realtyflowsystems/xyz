@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RFS Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,400&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --dark:    #0A0A0A;
+  --dark2:   #111111;
+  --dark3:   #1A1A1A;
+  --dark4:   #222222;
+  --gold:    #C9A84C;
+  --gold-l:  #E8C97A;
+  --gold-d:  #8B6E2A;
+  --gold-dim: rgba(201,168,76,0.12);
+  --white:   #FFFFFF;
+  --gray:    #888888;
+  --gray-l:  #CCCCCC;
+  --green:   #3ECF8E;
+  --red:     #FF4444;
+  --blue:    #4A9EFF;
+  --border:  rgba(201,168,76,0.12);
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { background:var(--dark); color:var(--white); font-family:'Instrument Sans',sans-serif; font-weight:300; min-height:100vh; overflow-x:hidden; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:var(--dark2); }
+::-webkit-scrollbar-thumb { background:var(--gold-d); border-radius:2px; }
+
+/* ── NAV ── */
+.nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 32px; height:56px;
+  background:rgba(10,10,10,0.97);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.nav-logo { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--gold); letter-spacing:.06em; }
+.nav-logo span { font-family:'DM Mono',monospace; font-size:9px; color:var(--gray); letter-spacing:.25em; display:block; margin-top:-2px; }
+.nav-center { display:flex; gap:4px; }
+.nav-tab {
+  padding:6px 16px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--gray); background:transparent; border:none; cursor:pointer;
+  font-family:'DM Mono',monospace; transition:color .2s; position:relative;
+}
+.nav-tab::after { content:''; position:absolute; bottom:0; left:16px; right:16px; height:1px; background:var(--gold); transform:scaleX(0); transition:transform .2s; }
+.nav-tab.active { color:var(--gold); }
+.nav-tab.active::after { transform:scaleX(1); }
+.nav-tab:hover { color:var(--gold-l); }
+.nav-right { display:flex; align-items:center; gap:20px; }
+.nav-stat { text-align:right; }
+.nav-stat-val { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; color:var(--gold); line-height:1; }
+.nav-stat-label { font-size:9px; color:var(--gray); letter-spacing:.15em; font-family:'DM Mono',monospace; }
+.nav-date { font-family:'DM Mono',monospace; font-size:10px; color:var(--gray); letter-spacing:.1em; }
+
+/* ── LAYOUT ── */
+.app { padding-top:56px; min-height:100vh; }
+.view { display:none; }
+.view.active { display:block; }
+
+/* ── PIPELINE VIEW ── */
+.pipeline-header {
+  padding:24px 32px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.pipeline-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; }
+.pipeline-title em { font-style:italic; color:var(--gold); }
+.btn-add {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:9px 20px; background:var(--gold); color:var(--dark);
+  font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+  border:none; cursor:pointer; font-family:'Instrument Sans',sans-serif;
+  transition:box-shadow .2s;
+}
+.btn-add:hover { box-shadow:0 8px 32px rgba(201,168,76,.3); }
+
+.pipeline-board {
+  display:flex; gap:0; overflow-x:auto; padding:0;
+  min-height:calc(100vh - 140px);
+}
+.stage-col {
+  min-width:220px; flex:1;
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+}
+.stage-col:last-child { border-right:none; }
+.stage-header {
+  padding:14px 16px 12px;
+  border-bottom:1px solid var(--border);
+  background:var(--dark2);
+  position:sticky; top:0; z-index:10;
+}
+.stage-name { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--gray); margin-bottom:4px; }
+.stage-meta { display:flex; align-items:center; justify-content:space-between; }
+.stage-count { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700; color:var(--gold); line-height:1; }
+.stage-value { font-size:10px; color:var(--gray); font-family:'DM Mono',monospace; }
+.stage-bar { height:2px; margin-top:10px; background:var(--dark4); }
+.stage-bar-fill { height:2px; background:var(--gold); transition:width .4s; }
+
+.stage-cards { padding:10px 10px; flex:1; display:flex; flex-direction:column; gap:8px; min-height:100px; }
+.stage-empty { text-align:center; padding:24px 12px; font-size:11px; color:rgba(255,255,255,.15); font-family:'DM Mono',monospace; letter-spacing:.1em; }
+
+/* ── LEAD CARD ── */
+.lead-card {
+  background:var(--dark2);
+  border:1px solid rgba(255,255,255,.05);
+  padding:12px 14px;
+  cursor:pointer;
+  transition:border-color .2s, transform .15s;
+  position:relative; overflow:hidden;
+}
+.lead-card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--gold); transform:scaleY(0); transform-origin:bottom;
+  transition:transform .3s;
+}
+.lead-card:hover { border-color:rgba(201,168,76,.25); transform:translateY(-1px); }
+.lead-card:hover::before { transform:scaleY(1); }
+.card-name { font-size:13px; font-weight:600; color:var(--white); margin-bottom:4px; }
+.card-source {
+  display:inline-block; padding:2px 7px; font-size:8px; letter-spacing:.15em;
+  font-family:'DM Mono',monospace; margin-bottom:6px;
+}
+.source-zillow { background:rgba(0,160,221,.12); color:#4AA8D8; }
+.source-instagram { background:rgba(193,53,132,.12); color:#E1639A; }
+.source-referral { background:rgba(62,207,142,.12); color:var(--green); }
+.card-meta { font-size:10px; color:var(--gray); line-height:1.6; }
+.card-meta span { color:var(--gray-l); }
+.card-tier {
+  display:inline-block; margin-top:6px; padding:2px 7px;
+  font-size:8px; letter-spacing:.12em; font-family:'DM Mono',monospace;
+  border:1px solid var(--gold-dim); color:var(--gold);
+}
+.card-date { font-size:9px; color:var(--gray); margin-top:6px; font-family:'DM Mono',monospace; }
+.card-actions { display:flex; gap:4px; margin-top:8px; }
+.card-btn {
+  flex:1; padding:4px 6px; font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+  font-family:'DM Mono',monospace; border:1px solid rgba(255,255,255,.07);
+  background:transparent; color:var(--gray); cursor:pointer; transition:all .2s;
+}
+.card-btn:hover { border-color:var(--gold); color:var(--gold); }
+.card-btn.advance { border-color:rgba(62,207,142,.3); color:var(--green); }
+.card-btn.advance:hover { background:rgba(62,207,142,.08); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.85); backdrop-filter:blur(4px);
+  display:none; align-items:center; justify-content:center; padding:24px;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--dark2); border:1px solid var(--border);
+  width:100%; max-width:560px; max-height:90vh; overflow-y:auto;
+  animation:modalIn .2s ease;
+}
+@keyframes modalIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+.modal-header {
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; }
+.modal-close { background:none; border:none; color:var(--gray); font-size:20px; cursor:pointer; padding:4px; }
+.modal-close:hover { color:var(--white); }
+.modal-body { padding:24px; }
+.form-group { margin-bottom:16px; }
+.form-label { display:block; font-size:10px; font-family:'DM Mono',monospace; letter-spacing:.15em; color:var(--gold); text-transform:uppercase; margin-bottom:6px; }
+.form-input, .form-select, .form-textarea {
+  width:100%; padding:10px 12px;
+  background:var(--dark3); border:1px solid rgba(255,255,255,.07);
+  color:var(--white); font-size:13px; font-family:'Instrument Sans',sans-serif;
+  outline:none; transition:border-color .2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--gold); }
+.form-select option { background:var(--dark3); }
+.form-textarea { min-height:80px; resize:vertical; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modal-footer {
+  padding:16px 24px;
+  border-top:1px solid var(--border);
+  display:flex; gap:10px; justify-content:flex-end;
+}
+.btn-cancel {
+  padding:9px 20px; background:transparent; border:1px solid rgba(255,255,255,.1);
+  color:var(--gray); font-size:11px; letter-spacing:.1em; cursor:pointer;
+  font-family:'Instrument Sans',sans-serif; transition:border-color .2s;
+}
+.btn-cancel:hover { border-color:var(--gray); color:var(--white); }
+.btn-save {
+  padding:9px 24px; background:var(--gold); border:none;
+  color:var(--dark); font-size:11px; font-weight:600; letter-spacing:.12em;
+  cursor:pointer; font-family:'Instrument Sans',sans-serif; transition:box-shadow .2s;
+  text-transform:uppercase;
+}
+.btn-save:hover { box-shadow:0 6px 24px rgba(201,168,76,.3); }
+
+/* ── TRACKER VIEW ── */
+.tracker-wrap { padding:24px 32px; max-width:1400px; }
+.tracker-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+.tracker-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; }
+.tracker-title em { font-style:italic; color:var(--gold); }
+.week-nav { display:flex; align-items:center; gap:12px; }
+.week-btn { background:transparent; border:1px solid var(--border); color:var(--gray); padding:6px 14px; font-size:11px; cursor:pointer; font-family:'DM Mono',monospace; transition:all .2s; }
+.week-btn:hover { border-color:var(--gold); color:var(--gold); }
+.week-label { font-family:'DM Mono',monospace; font-size:11px; color:var(--gold); letter-spacing:.1em; min-width:160px; text-align:center; }
+
+.kpi-strip { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:28px; }
+.kpi-cell { padding:16px 14px; background:var(--dark2); text-align:center; }
+.kpi-val { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:700; color:var(--gold); line-height:1; }
+.kpi-label { font-size:9px; color:var(--gray); letter-spacing:.12em; font-family:'DM Mono',monospace; text-transform:uppercase; margin-top:4px; }
+.kpi-target { font-size:9px; color:var(--gray); margin-top:2px; font-family:'DM Mono',monospace; }
+.kpi-pct { font-size:9px; margin-top:2px; font-family:'DM Mono',monospace; }
+.kpi-pct.on-track { color:var(--green); }
+.kpi-pct.behind { color:#FF8844; }
+
+.day-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:28px; }
+.day-card {
+  background:var(--dark2); border:1px solid rgba(255,255,255,.05); padding:14px 12px;
+  transition:border-color .2s;
+}
+.day-card.today { border-color:rgba(201,168,76,.35); }
+.day-card.future { opacity:.5; }
+.day-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--gray); letter-spacing:.15em; text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+.day-label .today-dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+.day-field { margin-bottom:8px; }
+.day-field-label { font-size:9px; color:var(--gray); font-family:'DM Mono',monospace; margin-bottom:3px; }
+.day-input {
+  width:100%; padding:5px 7px; background:var(--dark3);
+  border:1px solid rgba(255,255,255,.05); color:var(--white);
+  font-size:12px; font-family:'DM Mono',monospace; outline:none;
+  transition:border-color .2s; text-align:center;
+}
+.day-input:focus { border-color:var(--gold); }
+.day-input[readonly] { color:var(--gray); cursor:default; }
+.day-total { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-family:'DM Mono',monospace; font-size:9px; }
+.day-total-row { display:flex; justify-content:space-between; color:var(--gray); margin-bottom:2px; }
+.day-total-row span:last-child { color:var(--gold); }
+
+/* ── CLIENTS VIEW ── */
+.clients-wrap { padding:24px 32px; }
+.clients-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+.client-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; }
+.client-title em { font-style:italic; color:var(--gold); }
+.clients-table { width:100%; border-collapse:collapse; }
+.clients-table th {
+  text-align:left; padding:10px 16px; font-size:9px; font-family:'DM Mono',monospace;
+  letter-spacing:.2em; color:var(--gold); text-transform:uppercase;
+  background:var(--dark2); border-bottom:1px solid var(--border);
+}
+.clients-table td {
+  padding:12px 16px; font-size:12px; color:var(--gray-l);
+  border-bottom:1px solid rgba(255,255,255,.03);
+}
+.clients-table tr:hover td { background:rgba(201,168,76,.02); }
+.client-name { font-weight:600; color:var(--white); font-size:13px; }
+.status-badge {
+  display:inline-block; padding:2px 8px; font-size:8px; letter-spacing:.15em;
+  font-family:'DM Mono',monospace; text-transform:uppercase;
+}
+.status-active { background:rgba(62,207,142,.12); color:var(--green); }
+.status-onboarding { background:rgba(201,168,76,.12); color:var(--gold); }
+.status-prospect { background:rgba(74,158,255,.12); color:var(--blue); }
+.empty-state {
+  text-align:center; padding:80px 32px;
+  font-family:'DM Mono',monospace; font-size:11px; color:rgba(255,255,255,.15);
+  letter-spacing:.1em; line-height:2;
+}
+.empty-state strong { color:var(--gold-d); display:block; font-size:14px; margin-bottom:8px; font-family:'Cormorant Garamond',serif; font-weight:300; }
+
+/* ── REVENUE VIEW ── */
+.revenue-wrap { padding:24px 32px; }
+.rev-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; margin-bottom:24px; }
+.rev-title em { font-style:italic; color:var(--gold); }
+.rev-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
+.rev-card { background:var(--dark2); border:1px solid var(--border); padding:24px; }
+.rev-card-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--gold); letter-spacing:.2em; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:10px; }
+.rev-card-label::after { content:''; flex:1; height:1px; background:var(--gold-dim); }
+.rev-amount { font-family:'Cormorant Garamond',serif; font-size:48px; font-weight:700; color:var(--gold); line-height:1; margin-bottom:4px; }
+.rev-sub { font-size:11px; color:var(--gray); }
+.rev-target-bar { margin-top:16px; }
+.rev-target-label { display:flex; justify-content:space-between; font-size:10px; color:var(--gray); font-family:'DM Mono',monospace; margin-bottom:6px; }
+.rev-track { height:3px; background:var(--dark4); }
+.rev-fill { height:3px; background:linear-gradient(90deg,var(--gold-d),var(--gold)); transition:width .6s; }
+.rev-log { background:var(--dark2); border:1px solid var(--border); }
+.rev-log-header { padding:16px 20px; border-bottom:1px solid var(--border); font-family:'DM Mono',monospace; font-size:9px; color:var(--gold); letter-spacing:.2em; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
+.rev-log-row { display:flex; align-items:center; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,.03); font-size:12px; gap:12px; }
+.rev-log-row:last-child { border-bottom:none; }
+.rev-log-date { font-family:'DM Mono',monospace; font-size:10px; color:var(--gray); min-width:80px; }
+.rev-log-name { flex:1; color:var(--gray-l); }
+.rev-log-tier { font-size:10px; font-family:'DM Mono',monospace; color:var(--gray); }
+.rev-log-amt { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; color:var(--green); margin-left:auto; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:999;
+  padding:12px 20px; background:var(--dark2); border:1px solid var(--gold);
+  font-size:12px; color:var(--gold-l); font-family:'DM Mono',monospace;
+  letter-spacing:.08em; opacity:0; transform:translateY(8px);
+  transition:all .3s; pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* ── STAGE COLORS ── */
+.s0 .stage-bar-fill { background:#4A9EFF; }
+.s1 .stage-bar-fill { background:#9B74FF; }
+.s2 .stage-bar-fill { background:#FFB347; }
+.s3 .stage-bar-fill { background:#FF8844; }
+.s4 .stage-bar-fill { background:#FF6B6B; }
+.s5 .stage-bar-fill { background:#3ECF8E; }
+.s6 .stage-bar-fill { background:#C9A84C; }
+.s7 .stage-bar-fill { background:#555; }
+
+.s0 .stage-count { color:#4A9EFF; }
+.s1 .stage-count { color:#9B74FF; }
+.s2 .stage-count { color:#FFB347; }
+.s3 .stage-count { color:#FF8844; }
+.s4 .stage-count { color:#FF6B6B; }
+.s5 .stage-count { color:#3ECF8E; }
+.s6 .stage-count { color:#C9A84C; }
+.s7 .stage-count { color:#555; }
+
+@media(max-width:900px) {
+  .kpi-strip { grid-template-columns:repeat(4,1fr); }
+  .day-grid { grid-template-columns:repeat(2,1fr); }
+  .rev-grid { grid-template-columns:1fr; }
+  .nav-center { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">RealtyFlow<span>COMMAND CENTER</span></div>
+  <div class="nav-center">
+    <button class="nav-tab active" onclick="showView('pipeline')">Pipeline</button>
+    <button class="nav-tab" onclick="showView('tracker')">Daily Tracker</button>
+    <button class="nav-tab" onclick="showView('clients')">Clients</button>
+    <button class="nav-tab" onclick="showView('revenue')">Revenue</button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-stat">
+      <div class="nav-stat-val" id="navRevenue">$0</div>
+      <div class="nav-stat-label">Collected</div>
+    </div>
+    <div class="nav-stat">
+      <div class="nav-stat-val" id="navClients">0</div>
+      <div class="nav-stat-label">Clients</div>
+    </div>
+    <div class="nav-date" id="navDate"></div>
+  </div>
+</nav>
+
+<div class="app">
+
+<!-- ══════════════════════════════════════ -->
+<!-- PIPELINE VIEW                          -->
+<!-- ══════════════════════════════════════ -->
+<div id="view-pipeline" class="view active">
+  <div class="pipeline-header">
+    <div>
+      <div class="pipeline-title">RFS Revenue <em>Pipeline</em></div>
+    </div>
+    <button class="btn-add" onclick="openAddLead()">+ Add Lead</button>
+  </div>
+  <div class="pipeline-board" id="pipelineBoard"></div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- TRACKER VIEW                           -->
+<!-- ══════════════════════════════════════ -->
+<div id="view-tracker" class="view">
+  <div class="tracker-wrap">
+    <div class="tracker-header">
+      <div class="tracker-title">30-Day Execution <em>Tracker</em></div>
+      <div class="week-nav">
+        <button class="week-btn" onclick="changeWeek(-1)">← Prev</button>
+        <div class="week-label" id="weekLabel"></div>
+        <button class="week-btn" onclick="changeWeek(1)">Next →</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div class="day-grid" id="dayGrid"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- CLIENTS VIEW                           -->
+<!-- ══════════════════════════════════════ -->
+<div id="view-clients" class="view">
+  <div class="clients-wrap">
+    <div class="clients-header">
+      <div class="client-title">Client <em>Log</em></div>
+      <button class="btn-add" onclick="openAddClient()">+ Add Client</button>
+    </div>
+    <table class="clients-table">
+      <thead>
+        <tr>
+          <th>Name</th><th>Phone</th><th>Email</th><th>Brokerage</th>
+          <th>Tier</th><th>Setup Fee</th><th>Monthly</th><th>Status</th><th>Go-Live</th><th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="clientsBody"></tbody>
+    </table>
+    <div id="clientsEmpty" class="empty-state">
+      <strong>No clients yet.</strong>
+      First deal closes here. Keep sending DMs.<br/>
+      Every row in this table = revenue in your bank.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- REVENUE VIEW                           -->
+<!-- ══════════════════════════════════════ -->
+<div id="view-revenue" class="view">
+  <div class="revenue-wrap">
+    <div class="rev-title">Revenue <em>Dashboard</em></div>
+    <div class="rev-grid">
+      <div class="rev-card">
+        <div class="rev-card-label">Total Collected</div>
+        <div class="rev-amount" id="revTotal">$0</div>
+        <div class="rev-sub">Setup fees + retainers</div>
+        <div class="rev-target-bar">
+          <div class="rev-target-label"><span>Progress to $25K</span><span id="revPct">0%</span></div>
+          <div class="rev-track"><div class="rev-fill" id="revBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-card-label">MRR</div>
+        <div class="rev-amount" id="revMRR">$0</div>
+        <div class="rev-sub">Monthly recurring revenue</div>
+        <div class="rev-target-bar">
+          <div class="rev-target-label"><span>Target: $2,000/mo</span><span id="mrrPct">0%</span></div>
+          <div class="rev-track"><div class="rev-fill" id="mrrBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-card-label">Pipeline Value</div>
+        <div class="rev-amount" id="revPipeline">$0</div>
+        <div class="rev-sub">Active opportunities</div>
+        <div class="rev-target-bar">
+          <div class="rev-target-label"><span>Deals in pipeline</span><span id="pipeCount">0</span></div>
+          <div class="rev-track"><div class="rev-fill" id="pipeBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="rev-log">
+      <div class="rev-log-header">
+        <span>Transaction Log</span>
+        <button class="btn-add" style="padding:6px 14px;font-size:10px;" onclick="openAddRevenue()">+ Log Payment</button>
+      </div>
+      <div id="revLog">
+        <div class="empty-state" style="padding:40px;">
+          <strong>No transactions yet.</strong>
+          First payment logged here when it lands.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .app -->
+
+<!-- ══════════════════════════════════════ -->
+<!-- ADD LEAD MODAL                         -->
+<!-- ══════════════════════════════════════ -->
+<div class="modal-overlay" id="modalLead">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Lead</div>
+      <button class="modal-close" onclick="closeModal('modalLead')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="lf-fname" placeholder="Jane"/></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="lf-lname" placeholder="Smith"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="lf-phone" placeholder="(617) 555-0100"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="lf-email" placeholder="jane@realty.com"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Lead Source</label>
+          <select class="form-select" id="lf-source">
+            <option value="Zillow">Zillow</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Referral">Referral</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tier Interest</label>
+          <select class="form-select" id="lf-tier">
+            <option value="">Unknown</option>
+            <option value="Core">Core — $2,497</option>
+            <option value="Revenue Acceleration">Revenue Acceleration — $4,000</option>
+            <option value="Team Infrastructure">Team Infrastructure — $7,500+</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Monthly Lead Volume</label><input class="form-input" id="lf-volume" placeholder="e.g. 40" type="number"/></div>
+        <div class="form-group"><label class="form-label">Sides Per Year</label><input class="form-input" id="lf-sides" placeholder="e.g. 45" type="number"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Avg Response Time</label><input class="form-input" id="lf-response" placeholder="e.g. 2 hours"/></div>
+        <div class="form-group"><label class="form-label">Zillow Spend/Month</label><input class="form-input" id="lf-zillow" placeholder="e.g. $1,500" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Qualification Notes</label><textarea class="form-textarea" id="lf-notes" placeholder="Key details from DM conversation..."></textarea></div>
+      <div class="form-group">
+        <label class="form-label">Pipeline Stage</label>
+        <select class="form-select" id="lf-stage">
+          <option value="0">New Lead</option>
+          <option value="1">Qualified</option>
+          <option value="2">Audit Booked</option>
+          <option value="3">Audit Complete</option>
+          <option value="4">Proposal Sent</option>
+          <option value="5">Closed — Won</option>
+          <option value="6">Onboarding</option>
+          <option value="7">Closed — Lost</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalLead')">Cancel</button>
+      <button class="btn-save" onclick="saveLead()">Save Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CLIENT MODAL -->
+<div class="modal-overlay" id="modalClient">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Client</div>
+      <button class="modal-close" onclick="closeModal('modalClient')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="cf-name" placeholder="Jane Smith"/></div>
+        <div class="form-group"><label class="form-label">Brokerage</label><input class="form-input" id="cf-brokerage" placeholder="RE/MAX Boston"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="cf-phone"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="cf-email"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tier</label>
+          <select class="form-select" id="cf-tier">
+            <option value="Core">Core — $2,497</option>
+            <option value="Revenue Acceleration">Revenue Acceleration — $4,000</option>
+            <option value="Team Infrastructure">Team Infrastructure — $7,500+</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="cf-status">
+            <option value="Onboarding">Onboarding</option>
+            <option value="Active">Active</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Setup Fee Paid</label><input class="form-input" id="cf-setup" placeholder="$4,000"/></div>
+        <div class="form-group"><label class="form-label">Monthly Retainer</label><input class="form-input" id="cf-monthly" placeholder="$497"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Go-Live Date</label><input class="form-input" id="cf-golive" type="date"/></div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="cf-notes" placeholder="Key client info, market, database size..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalClient')">Cancel</button>
+      <button class="btn-save" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD REVENUE MODAL -->
+<div class="modal-overlay" id="modalRevenue">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log Payment</div>
+      <button class="modal-close" onclick="closeModal('modalRevenue')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Client Name</label><input class="form-input" id="rf-name" placeholder="Jane Smith"/></div>
+        <div class="form-group"><label class="form-label">Amount</label><input class="form-input" id="rf-amount" placeholder="$4,000" type="number"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="rf-type">
+            <option value="Setup Fee">Setup Fee</option>
+            <option value="Retainer">Monthly Retainer</option>
+            <option value="Add-On">Add-On</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="rf-date" type="date"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalRevenue')">Cancel</button>
+      <button class="btn-save" onclick="saveRevenue()">Log Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEAD DETAIL MODAL -->
+<div class="modal-overlay" id="modalDetail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="detailName">Lead Detail</div>
+      <button class="modal-close" onclick="closeModal('modalDetail')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="deleteLead()" style="border-color:rgba(255,68,68,.3);color:#FF6666;">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('modalDetail')">Close</button>
+      <button class="btn-save" onclick="advanceLeadFromDetail()">Advance Stage →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const STAGES = [
+  'New Lead','Qualified','Audit Booked','Audit Complete',
+  'Proposal Sent','Closed — Won','Onboarding','Closed — Lost'
+];
+const TIER_VALUES = { 'Core':2497, 'Revenue Acceleration':4000, 'Team Infrastructure':7500 };
+
+function load(key, def) {
+  try { return JSON.parse(localStorage.getItem('rfs_'+key)) ?? def; } catch { return def; }
+}
+function save(key, val) {
+  localStorage.setItem('rfs_'+key, JSON.stringify(val));
+}
+
+let leads   = load('leads', []);
+let clients = load('clients', []);
+let revenue = load('revenue', []);
+let tracker = load('tracker', {});
+let currentWeek = 0;
+let detailLeadId = null;
+
+// ══════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='pipeline') renderPipeline();
+  if(name==='tracker') renderTracker();
+  if(name==='clients') renderClients();
+  if(name==='revenue') renderRevenue();
+}
+
+function updateNavStats() {
+  const total = revenue.reduce((s,r)=>s+Number(r.amount),0);
+  document.getElementById('navRevenue').textContent = '$'+total.toLocaleString();
+  document.getElementById('navClients').textContent = clients.length;
+}
+
+function setDate() {
+  const d = new Date();
+  const opts = {weekday:'short',month:'short',day:'numeric'};
+  document.getElementById('navDate').textContent = d.toLocaleDateString('en-US',opts).toUpperCase();
+}
+
+// ══════════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════════
+function renderPipeline() {
+  const board = document.getElementById('pipelineBoard');
+  board.innerHTML = '';
+  STAGES.forEach((stage, si) => {
+    const stageLeads = leads.filter(l => l.stage === si);
+    const stageValue = stageLeads.reduce((s,l) => s+(TIER_VALUES[l.tier]||2497), 0);
+    const maxLeads = Math.max(...STAGES.map((_,i)=>leads.filter(l=>l.stage===i).length),1);
+    const fillPct = maxLeads > 0 ? (stageLeads.length/maxLeads*100) : 0;
+
+    const col = document.createElement('div');
+    col.className = `stage-col s${si}`;
+    col.innerHTML = `
+      <div class="stage-header">
+        <div class="stage-name">${stage}</div>
+        <div class="stage-meta">
+          <div class="stage-count">${stageLeads.length}</div>
+          <div class="stage-value">${stageValue>0?'$'+stageValue.toLocaleString():''}</div>
+        </div>
+        <div class="stage-bar"><div class="stage-bar-fill" style="width:${fillPct}%"></div></div>
+      </div>
+      <div class="stage-cards" id="stage-${si}">
+        ${stageLeads.length===0?'<div class="stage-empty">empty</div>':''}
+        ${stageLeads.map(l=>renderCard(l,si)).join('')}
+      </div>`;
+    board.appendChild(col);
+  });
+}
+
+function renderCard(lead, si) {
+  const srcClass = lead.source==='Zillow'?'source-zillow':lead.source==='Instagram'?'source-instagram':'source-referral';
+  return `
+    <div class="lead-card" onclick="openDetail('${lead.id}')">
+      <div class="card-name">${lead.fname} ${lead.lname}</div>
+      <div class="card-source ${srcClass}">${lead.source||'—'}</div>
+      <div class="card-meta">
+        ${lead.volume?`Vol: <span>${lead.volume}/mo</span> &nbsp;`:''}
+        ${lead.sides?`Sides: <span>${lead.sides}/yr</span>`:''}
+      </div>
+      ${lead.tier?`<div class="card-tier">${lead.tier}</div>`:''}
+      <div class="card-date">${formatDate(lead.created)}</div>
+      <div class="card-actions">
+        <button class="card-btn advance" onclick="event.stopPropagation();advanceLead('${lead.id}')">Advance →</button>
+        <button class="card-btn" onclick="event.stopPropagation();openDetail('${lead.id}')">View</button>
+      </div>
+    </div>`;
+}
+
+function advanceLead(id) {
+  const lead = leads.find(l=>l.id===id);
+  if(!lead) return;
+  if(lead.stage < 7) { lead.stage++; save('leads',leads); renderPipeline(); toast('Lead advanced to: '+STAGES[lead.stage]); }
+}
+
+function deleteLead() {
+  if(!detailLeadId) return;
+  if(!confirm('Delete this lead?')) return;
+  leads = leads.filter(l=>l.id!==detailLeadId);
+  save('leads',leads);
+  closeModal('modalDetail');
+  renderPipeline();
+  toast('Lead deleted');
+}
+
+function advanceLeadFromDetail() {
+  if(detailLeadId) { advanceLead(detailLeadId); closeModal('modalDetail'); }
+}
+
+// ══════════════════════════════════════════════
+// LEAD DETAIL
+// ══════════════════════════════════════════════
+function openDetail(id) {
+  const lead = leads.find(l=>l.id===id);
+  if(!lead) return;
+  detailLeadId = id;
+  document.getElementById('detailName').textContent = lead.fname+' '+lead.lname;
+  document.getElementById('detailBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      ${field('Stage', STAGES[lead.stage])}
+      ${field('Source', lead.source||'—')}
+      ${field('Phone', lead.phone||'—')}
+      ${field('Email', lead.email||'—')}
+      ${field('Lead Volume', lead.volume?lead.volume+'/mo':'—')}
+      ${field('Sides/Year', lead.sides||'—')}
+      ${field('Response Time', lead.response||'—')}
+      ${field('Zillow Spend', lead.zillow||'—')}
+      ${field('Tier', lead.tier||'—')}
+      ${field('Added', formatDate(lead.created))}
+    </div>
+    ${lead.notes?`<div class="form-group"><label class="form-label">Notes</label><div style="padding:10px 12px;background:var(--dark3);font-size:12px;color:var(--gray-l);line-height:1.6;">${lead.notes}</div></div>`:''}
+  `;
+  document.getElementById('modalDetail').classList.add('open');
+}
+
+function field(label, val) {
+  return `<div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px;">${label}</div><div style="font-size:13px;color:var(--gray-l);">${val}</div></div>`;
+}
+
+// ══════════════════════════════════════════════
+// ADD LEAD
+// ══════════════════════════════════════════════
+function openAddLead() { document.getElementById('modalLead').classList.add('open'); }
+
+function saveLead() {
+  const fname = document.getElementById('lf-fname').value.trim();
+  if(!fname) { toast('First name required'); return; }
+  const lead = {
+    id: 'l'+Date.now(),
+    fname, lname: document.getElementById('lf-lname').value.trim(),
+    phone: document.getElementById('lf-phone').value.trim(),
+    email: document.getElementById('lf-email').value.trim(),
+    source: document.getElementById('lf-source').value,
+    tier: document.getElementById('lf-tier').value,
+    volume: document.getElementById('lf-volume').value,
+    sides: document.getElementById('lf-sides').value,
+    response: document.getElementById('lf-response').value.trim(),
+    zillow: document.getElementById('lf-zillow').value.trim(),
+    notes: document.getElementById('lf-notes').value.trim(),
+    stage: parseInt(document.getElementById('lf-stage').value),
+    created: new Date().toISOString()
+  };
+  leads.push(lead);
+  save('leads', leads);
+  closeModal('modalLead');
+  renderPipeline();
+  updateNavStats();
+  toast('Lead added: '+fname);
+  ['lf-fname','lf-lname','lf-phone','lf-email','lf-volume','lf-sides','lf-response','lf-zillow','lf-notes'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ══════════════════════════════════════════════
+// TRACKER
+// ══════════════════════════════════════════════
+function getWeekDays(offset) {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day===0?6:day-1) + offset*7);
+  return Array.from({length:7},(_,i)=>{
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    return d;
+  });
+}
+
+function renderTracker() {
+  const days = getWeekDays(currentWeek);
+  const today = new Date();
+  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('weekLabel').textContent = fmt(days[0])+' — '+fmt(days[6]);
+
+  // Aggregate KPIs for this week
+  let totals = {dms:0,followups:0,replies:0,looms:0,calls:0,closes:0,revenue:0};
+  days.forEach(d => {
+    const key = d.toISOString().slice(0,10);
+    const t = tracker[key] || {};
+    totals.dms       += Number(t.dms||0);
+    totals.followups += Number(t.followups||0);
+    totals.replies   += Number(t.replies||0);
+    totals.looms     += Number(t.looms||0);
+    totals.calls     += Number(t.calls||0);
+    totals.closes    += Number(t.closes||0);
+    totals.revenue   += Number(t.revenue||0);
+  });
+
+  const targets = {dms:280,followups:35,replies:21,looms:7,calls:7,closes:2,revenue:5000};
+  const kpiDefs = [
+    {key:'dms',label:'DMs Sent',target:'280/wk'},
+    {key:'followups',label:'Follow-Ups',target:'35/wk'},
+    {key:'replies',label:'Replies',target:'21/wk'},
+    {key:'looms',label:'Looms',target:'7/wk'},
+    {key:'calls',label:'Calls Booked',target:'7/wk'},
+    {key:'closes',label:'Closes',target:'2/wk'},
+    {key:'revenue',label:'Revenue',target:'$5K/wk'},
+  ];
+
+  document.getElementById('kpiStrip').innerHTML = kpiDefs.map(k=>{
+    const val = totals[k.key];
+    const pct = Math.min(100, Math.round(val/targets[k.key]*100));
+    const on = pct >= 70;
+    const display = k.key==='revenue'?'$'+val.toLocaleString():val;
+    return `<div class="kpi-cell">
+      <div class="kpi-val">${display}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-target">${k.target}</div>
+      <div class="kpi-pct ${on?'on-track':'behind'}">${pct}% ${on?'✓':'↑'}</div>
+    </div>`;
+  }).join('');
+
+  const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  document.getElementById('dayGrid').innerHTML = days.map((d,i)=>{
+    const key = d.toISOString().slice(0,10);
+    const t = tracker[key] || {};
+    const isToday = d.toDateString()===today.toDateString();
+    const isFuture = d > today;
+    const dayTotal = Number(t.dms||0)+Number(t.followups||0);
+    return `<div class="day-card ${isToday?'today':''} ${isFuture?'future':''}">
+      <div class="day-label">
+        <span>${dayNames[i]} ${d.getDate()}</span>
+        ${isToday?'<span class="today-dot"></span>':''}
+      </div>
+      ${dayField('DMs',key,'dms',t.dms,isFuture)}
+      ${dayField('Follow-Ups',key,'followups',t.followups,isFuture)}
+      ${dayField('Replies',key,'replies',t.replies,isFuture)}
+      ${dayField('Looms',key,'looms',t.looms,isFuture)}
+      ${dayField('Calls',key,'calls',t.calls,isFuture)}
+      ${dayField('Closes',key,'closes',t.closes,isFuture)}
+      ${dayField('Revenue $',key,'revenue',t.revenue,isFuture)}
+    </div>`;
+  }).join('');
+}
+
+function dayField(label, dateKey, field, val, readonly) {
+  return `<div class="day-field">
+    <div class="day-field-label">${label}</div>
+    <input class="day-input" type="number" value="${val||''}" min="0"
+      ${readonly?'readonly placeholder="—"':'placeholder="0"'}
+      onchange="saveDay('${dateKey}','${field}',this.value)"/>
+  </div>`;
+}
+
+function saveDay(dateKey, field, val) {
+  if(!tracker[dateKey]) tracker[dateKey]={};
+  tracker[dateKey][field] = Number(val);
+  save('tracker', tracker);
+  renderTrackerKPIs();
+}
+
+function renderTrackerKPIs() { renderTracker(); }
+
+function changeWeek(dir) {
+  currentWeek += dir;
+  renderTracker();
+}
+
+// ══════════════════════════════════════════════
+// CLIENTS
+// ══════════════════════════════════════════════
+function openAddClient() { document.getElementById('modalClient').classList.add('open'); }
+
+function saveClient() {
+  const name = document.getElementById('cf-name').value.trim();
+  if(!name) { toast('Name required'); return; }
+  const client = {
+    id:'c'+Date.now(), name,
+    brokerage: document.getElementById('cf-brokerage').value.trim(),
+    phone: document.getElementById('cf-phone').value.trim(),
+    email: document.getElementById('cf-email').value.trim(),
+    tier: document.getElementById('cf-tier').value,
+    status: document.getElementById('cf-status').value,
+    setup: document.getElementById('cf-setup').value.trim(),
+    monthly: document.getElementById('cf-monthly').value.trim(),
+    golive: document.getElementById('cf-golive').value,
+    notes: document.getElementById('cf-notes').value.trim(),
+  };
+  clients.push(client);
+  save('clients', clients);
+  closeModal('modalClient');
+  renderClients();
+  updateNavStats();
+  toast('Client added: '+name);
+}
+
+function renderClients() {
+  const body = document.getElementById('clientsBody');
+  const empty = document.getElementById('clientsEmpty');
+  if(clients.length===0) { body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  body.innerHTML = clients.map(c=>`
+    <tr>
+      <td><div class="client-name">${c.name}</div></td>
+      <td>${c.phone||'—'}</td>
+      <td>${c.email||'—'}</td>
+      <td>${c.brokerage||'—'}</td>
+      <td><div class="card-tier" style="display:inline-block;">${c.tier}</div></td>
+      <td style="color:var(--green);font-family:'Cormorant Garamond',serif;font-size:16px;">${c.setup||'—'}</td>
+      <td>${c.monthly||'—'}</td>
+      <td><span class="status-badge ${c.status==='Active'?'status-active':'status-onboarding'}">${c.status}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${c.golive||'—'}</td>
+      <td style="max-width:200px;font-size:11px;color:var(--gray);">${c.notes||'—'}</td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// REVENUE
+// ══════════════════════════════════════════════
+function openAddRevenue() {
+  document.getElementById('rf-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('modalRevenue').classList.add('open');
+}
+
+function saveRevenue() {
+  const name = document.getElementById('rf-name').value.trim();
+  const amount = document.getElementById('rf-amount').value;
+  if(!name||!amount) { toast('Name and amount required'); return; }
+  const entry = {
+    id:'r'+Date.now(), name, amount:Number(amount),
+    type: document.getElementById('rf-type').value,
+    date: document.getElementById('rf-date').value,
+  };
+  revenue.push(entry);
+  save('revenue',revenue);
+  closeModal('modalRevenue');
+  renderRevenue();
+  updateNavStats();
+  toast('Payment logged: $'+Number(amount).toLocaleString());
+}
+
+function renderRevenue() {
+  const total = revenue.reduce((s,r)=>s+r.amount,0);
+  const mrr = revenue.filter(r=>r.type==='Retainer').reduce((s,r)=>s+r.amount,0);
+  const pipelineVal = leads.filter(l=>l.stage>0&&l.stage<5).reduce((s,l)=>s+(TIER_VALUES[l.tier]||2497),0);
+  const activePipe = leads.filter(l=>l.stage>0&&l.stage<5).length;
+
+  document.getElementById('revTotal').textContent = '$'+total.toLocaleString();
+  document.getElementById('revMRR').textContent = '$'+mrr.toLocaleString();
+  document.getElementById('revPipeline').textContent = '$'+pipelineVal.toLocaleString();
+
+  const pct = Math.min(100,Math.round(total/25000*100));
+  document.getElementById('revPct').textContent = pct+'%';
+  document.getElementById('revBar').style.width = pct+'%';
+
+  const mPct = Math.min(100,Math.round(mrr/2000*100));
+  document.getElementById('mrrPct').textContent = mPct+'%';
+  document.getElementById('mrrBar').style.width = mPct+'%';
+  document.getElementById('pipeCount').textContent = activePipe+' deals';
+  document.getElementById('pipeBar').style.width = Math.min(100,activePipe/10*100)+'%';
+
+  if(revenue.length===0) {
+    document.getElementById('revLog').innerHTML = `<div class="empty-state" style="padding:40px;"><strong>No transactions yet.</strong>First payment logged here when it lands.</div>`;
+    return;
+  }
+  const sorted = [...revenue].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('revLog').innerHTML = sorted.map(r=>`
+    <div class="rev-log-row">
+      <div class="rev-log-date">${r.date}</div>
+      <div class="rev-log-name">${r.name}</div>
+      <div class="rev-log-tier">${r.type}</div>
+      <div class="rev-log-amt">+$${Number(r.amount).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function formatDate(iso) { if(!iso) return '—'; return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+setDate();
+updateNavStats();
+renderPipeline();
+</script>
+</body>
+</html>
