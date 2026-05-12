@@ -10,20 +10,12 @@
  * The SUPABASE_URL and SUPABASE_ANON_KEY below are PUBLIC (safe to commit).
  * They only allow the operations your RLS policies permit.
  * Never put service_role key here.
- *
- * --- REPLACE THESE VALUES AFTER CREATING YOUR SUPABASE PROJECT ---
  */
 
 const RFS_CONFIG = {
-  // Supabase project URL: https://supabase.com/dashboard → Settings → API
-  SUPABASE_URL: https://wufmcymarbkrjzaqapuu.supabase.co,
-
-  // Supabase anon key (safe to be public — RLS protects everything)
-  SUPABASE_ANON_KEY: sb_publishable_u0H1VuhN27xEDwLYUL4DIA_www1NJaS,
-
-  // Your deployed Edge Function base URL
-  // Same as SUPABASE_URL + /functions/v1
-  FUNCTIONS_URL: https://supabase.com/dashboard/project/wufmcymarbkrjzaqapuu/functions,
+  SUPABASE_URL:     'https://wufmcymarbkrjzaqapuu.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_u0H1VuhN27xEDwLYUL4DIA_www1NJaS',
+  FUNCTIONS_URL:    'https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1',
 };
 
 // ── Supabase JS client (loaded via CDN in each HTML page) ────
@@ -146,11 +138,10 @@ const RFS = {
     const { data: leads } = await db.from('leads').select('stage, tier');
     const { data: payments } = await db.from('payments').select('amount_cents').eq('status', 'succeeded');
 
-    const tierValues = { 'Core': 2497, 'Revenue Acceleration': 4000, 'Team Infrastructure': 7500 };
-    const total    = leads?.length || 0;
-    const booked   = leads?.filter(l => l.stage >= 2).length || 0;
-    const closed   = leads?.filter(l => l.stage === 5).length || 0;
-    const revenue  = (payments || []).reduce((s, p) => s + Math.round(p.amount_cents / 100), 0);
+    const total   = leads?.length || 0;
+    const booked  = leads?.filter(l => l.stage >= 2).length || 0;
+    const closed  = leads?.filter(l => l.stage === 5).length || 0;
+    const revenue = (payments || []).reduce((s, p) => s + Math.round(p.amount_cents / 100), 0);
 
     return { total, booked, closed, revenue };
   },
@@ -158,7 +149,7 @@ const RFS = {
   /** Convert command-center localStorage lead format → Supabase format. */
   toSupabaseLead(localLead) {
     return {
-      id:         localLead.id,           // UUID — keep in sync
+      id:         localLead.id,
       fname:      localLead.fname,
       lname:      localLead.lname,
       email:      localLead.email || null,
@@ -176,7 +167,6 @@ const RFS = {
 
   /** Merge Supabase leads into localStorage format for command-center. */
   fromSupabaseLead(sLead) {
-    const parts = [sLead.fname, sLead.lname].filter(Boolean);
     return {
       id:      sLead.id,
       fname:   sLead.fname,
@@ -208,14 +198,9 @@ const RFS = {
 // ── Auto-init when DOM is ready ──────────────────────────────
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
-    if (
-      RFS_CONFIG.SUPABASE_URL !== 'https://YOUR_PROJECT_REF.supabase.co' &&
-      typeof window.supabase !== 'undefined'
-    ) {
+    if (typeof window.supabase !== 'undefined') {
       initSupabase();
       console.log('[RFS] Supabase client initialized');
-    } else if (RFS_CONFIG.SUPABASE_URL === 'https://YOUR_PROJECT_REF.supabase.co') {
-      console.warn('[RFS] Supabase not configured — running in localStorage-only mode. See SETUP.md.');
     }
   });
 }
