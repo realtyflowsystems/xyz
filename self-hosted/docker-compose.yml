@@ -1,0 +1,136 @@
+version: '3.8'
+
+# RealtyFlow Systems — Self-Hosted Stack
+# Run from /opt/rfs/
+# Requires: .env file in same directory (copy from .env.example)
+
+networks:
+  rfs:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  n8n_data:
+  appsmith_data:
+  npm_data:
+  npm_letsencrypt:
+
+services:
+
+  # ── PostgreSQL (shared database) ─────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: rfs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rfs
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Nginx Proxy Manager (reverse proxy + SSL) ─────────────────
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: rfs-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"       # HTTP (redirects to HTTPS)
+      - "443:443"     # HTTPS
+      - "81:81"       # NPM Admin UI (close after setup)
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - rfs
+    depends_on:
+      - postgres
+
+  # ── n8n (workflow automation) ─────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: rfs-n8n
+    restart: unless-stopped
+    environment:
+      # Database
+      DB_TYPE:                  postgresdb
+      DB_POSTGRESDB_HOST:       postgres
+      DB_POSTGRESDB_PORT:       5432
+      DB_POSTGRESDB_DATABASE:   ${N8N_DB}
+      DB_POSTGRESDB_USER:       ${N8N_DB_USER}
+      DB_POSTGRESDB_PASSWORD:   ${N8N_DB_PASSWORD}
+      # Auth
+      N8N_BASIC_AUTH_ACTIVE:    "true"
+      N8N_BASIC_AUTH_USER:      ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD:  ${N8N_BASIC_AUTH_PASSWORD}
+      # Encryption
+      N8N_ENCRYPTION_KEY:       ${N8N_ENCRYPTION_KEY}
+      # Host / URLs
+      N8N_HOST:                 ${N8N_HOST}
+      N8N_PORT:                 5678
+      N8N_PROTOCOL:             https
+      WEBHOOK_URL:              https://${N8N_HOST}/
+      # Email (Amazon SES via SMTP)
+      N8N_EMAIL_MODE:           smtp
+      N8N_SMTP_HOST:            ${SES_HOST}
+      N8N_SMTP_PORT:            ${SES_PORT}
+      N8N_SMTP_USER:            ${SES_USER}
+      N8N_SMTP_PASS:            ${SES_PASSWORD}
+      N8N_SMTP_SENDER:          ${EMAIL_FROM}
+      N8N_SMTP_SSL:             "false"
+      N8N_SMTP_STARTTLS:        "true"
+      # Timezone
+      GENERIC_TIMEZONE:         America/New_York
+      TZ:                       America/New_York
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - rfs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Cal.com (booking) ─────────────────────────────────────────
+  calcom:
+    image: calcom/cal.com:latest
+    container_name: rfs-calcom
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${CALCOM_DB_USER}:${CALCOM_DB_PASSWORD}@postgres:5432/${CALCOM_DB}
+      # Auth
+      NEXTAUTH_SECRET:          ${CALCOM_NEXTAUTH_SECRET}
+      NEXTAUTH_URL:             ${CALCOM_URL}
+      CALENDSO_ENCRYPTION_KEY:  ${CALCOM_ENCRYPTION_KEY}
+      # App URL
+      NEXT_PUBLIC_WEBAPP_URL:   ${CALCOM_URL}
+      # Email (Amazon SES via SMTP)
+      EMAIL_FROM:               ${EMAIL_FROM}
+      EMAIL_SERVER_HOST:        ${SES_HOST}
+      EMAIL_SERVER_PORT:        ${SES_PORT}
+      EMAIL_SERVER_USER:        ${SES_USER}
+      EMAIL_SERVER_PASSWORD:    ${SES_PASSWORD}
+      # Disable telemetry
+      NEXT_TELEMETRY_DISABLED:  "1"
+    networks:
+      - rfs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Appsmith (CRM dashboard) ──────────────────────────────────
+  appsmith:
+    image: index.docker.io/appsmith/appsmith-ce:latest
+    container_name: rfs-appsmith
+    restart: unless-stopped
+    volumes:
+      - appsmith_data:/appsmith-stacks
+    networks:
+      - rfs
