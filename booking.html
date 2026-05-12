@@ -145,6 +145,8 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   <div class="bk-footer-copy">&copy; 2026 RealtyFlow Systems &middot; 820 Massachusetts Ave, Cambridge, MA 02139 &middot; MA TCPA Compliant</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/rfs-backend.js"></script>
 <script>
 (function(){
   // Cursor animation
@@ -157,7 +159,6 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   var form=document.getElementById('bookingForm');
   var loading=document.getElementById('loadingState');
   var success=document.getElementById('successState');
-  var formWrapper=document.querySelector('.bk-form-wrapper');
 
   form.addEventListener('submit',function(e){
     e.preventDefault();
@@ -171,47 +172,34 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     ['name','email','phone'].forEach(function(field){
       var input=document.getElementById(field);
       var group=input.parentElement;
-      if(!input.value.trim()){
-        group.classList.add('error');
-        isValid=false;
-      }else{
-        group.classList.remove('error');
-      }
+      if(!input.value.trim()){group.classList.add('error');isValid=false;}
+      else{group.classList.remove('error');}
     });
-
     if(!isValid) return;
 
     // Show loading
     form.style.display='none';
     loading.style.display='block';
 
-    // Clean phone: remove all non-digits, then format
+    // Clean phone
     var phoneDigits=phone.replace(/\D/g,'');
-    var formattedPhone='+1'+phoneDigits;
+    var formattedPhone=phoneDigits.startsWith('1')&&phoneDigits.length===11
+      ? '+'+phoneDigits : '+1'+phoneDigits;
 
-    // Send to Make webhook
-    var webhookUrl='https://hook.us2.make.com/n7oz97mc3hpn27w1dstylknmqwuc7w0v';
-    var payload={
+    // Submit via RFS backend (Supabase Edge Function)
+    RFS.submitBooking({
       name:name,
       email:email,
       phone:formattedPhone,
-      timestamp:new Date().toISOString(),
       source:'realtyflow.xyz/booking'
-    };
-
-    fetch(webhookUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
     }).then(function(){
-      form.style.display='none';
       loading.style.display='none';
       success.style.display='block';
     }).catch(function(err){
       form.style.display='block';
       loading.style.display='none';
-      alert('Booking failed. Please try again.');
-      console.error(err);
+      console.error('[RFS] Booking error:', err);
+      alert('Booking failed. Please try again or email erics@realtyflow.xyz directly.');
     });
   });
 })();
