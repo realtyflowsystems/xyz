@@ -16,14 +16,14 @@
 
 const RFS_CONFIG = {
   // Supabase project URL: https://supabase.com/dashboard → Settings → API
-  SUPABASE_URL: 'https://YOUR_PROJECT_REF.supabase.co',
+  SUPABASE_URL: https://wufmcymarbkrjzaqapuu.supabase.co,
 
   // Supabase anon key (safe to be public — RLS protects everything)
-  SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+  SUPABASE_ANON_KEY: sb_publishable_u0H1VuhN27xEDwLYUL4DIA_www1NJaS,
 
   // Your deployed Edge Function base URL
   // Same as SUPABASE_URL + /functions/v1
-  FUNCTIONS_URL: 'https://YOUR_PROJECT_REF.supabase.co/functions/v1',
+  FUNCTIONS_URL: https://supabase.com/dashboard/project/wufmcymarbkrjzaqapuu/functions,
 };
 
 // ── Supabase JS client (loaded via CDN in each HTML page) ────
