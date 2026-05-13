@@ -633,12 +633,19 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/js/rfs-backend.js"></script>
 <script>
 // ══════════════════════════════════════════════
-// SMS TEMPLATES (sent via Supabase Edge Function)
+// ZAPIER WEBHOOK CONFIG
 // ══════════════════════════════════════════════
+const ZAPIER_HOOKS = {
+  'Audit Booked':    'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Audit Complete':  'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Proposal Sent':   'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Closed — Won':    'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+  'Closed — Lost':   'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
+};
+
+// SMS messages per stage
 const SMS_TEMPLATES = {
   'Audit Booked':   (name) => `Hey ${name}, your RealtyFlow Revenue Audit is confirmed. Come ready with your monthly lead volume. See you then. — Erics`,
   'Audit Complete': (name) => `Hey ${name}, great conversation today. I just sent over your custom offer comparison. Take a look and let me know if you have questions. — Erics`,
@@ -648,30 +655,28 @@ const SMS_TEMPLATES = {
 };
 
 async function fireWebhook(stageName, lead) {
-  if (!lead.phone) return;
+  const hook = ZAPIER_HOOKS[stageName];
+  if (!hook || !lead.phone) return;
   const smsBody = SMS_TEMPLATES[stageName] ? SMS_TEMPLATES[stageName](lead.fname) : null;
   if (!smsBody) return;
-
-  // Persist stage change to Supabase (fire-and-forget)
-  RFS.advanceStage(lead.id, STAGES.indexOf(stageName), stageName).catch(()=>{});
-  RFS.logActivity(lead.id, 'stage_change', `Moved to "${stageName}"`, { sms_sent: !!smsBody }).catch(()=>{});
-
-  // Send SMS via Supabase Edge Function (sms-send)
-  const fnUrl = RFS_CONFIG.FUNCTIONS_URL + '/sms-send';
   try {
-    await fetch(fnUrl, {
+    await fetch(hook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        lead_id:  lead.id,
-        phone:    lead.phone,
-        body:     smsBody,
-        type:     'manual',
+        stage:      stageName,
+        first_name: lead.fname,
+        last_name:  lead.lname,
+        phone:      lead.phone,
+        email:      lead.email,
+        tier:       lead.tier || 'Unknown',
+        sms_body:   smsBody,
+        timestamp:  new Date().toISOString(),
       })
     });
-    toast('SMS sent → ' + lead.fname + ' (' + stageName + ')');
+    toast('📱 SMS triggered → ' + lead.fname + ' (' + stageName + ')');
   } catch(e) {
-    toast('⚠️ SMS failed — check Supabase logs');
+    toast('⚠️ Webhook failed — check Zapier');
   }
 }
 
@@ -697,74 +702,6 @@ let revenue = load('revenue', []);
 let tracker = load('tracker', {});
 let currentWeek = 0;
 let detailLeadId = null;
-
-// ── Supabase sync (bi-directional) ───────────────────────────
-// Pulls leads from Supabase, merges into localStorage, re-renders.
-// Supabase is the source of truth; localStorage is the offline cache.
-async function syncFromSupabase() {
-  try {
-    const remoteLeads = await RFS.getLeads();
-    if (!remoteLeads.length) return;
-
-    const localIds = new Set(leads.map(l => l.id));
-    let changed = false;
-
-    remoteLeads.forEach(rl => {
-      const local = RFS.fromSupabaseLead(rl);
-      if (!localIds.has(local.id)) {
-        leads.push(local);
-        changed = true;
-      } else {
-        const idx = leads.findIndex(l => l.id === local.id);
-        // Remote wins for stage/tier/email/phone (set via booking form or manual update)
-        if (idx >= 0 && leads[idx].stage !== local.stage) {
-          leads[idx] = { ...leads[idx], ...local };
-          changed = true;
-        }
-      }
-    });
-
-    if (changed) {
-      save('leads', leads);
-      renderPipeline();
-      updateNavStats();
-    }
-  } catch(e) {
-    console.warn('[RFS] Supabase sync failed (offline?)', e);
-  }
-}
-
-// Push a single lead to Supabase (called on save/advance)
-function pushLeadToSupabase(lead) {
-  RFS.saveLead(RFS.toSupabaseLead(lead)).catch(e =>
-    console.warn('[RFS] Lead push failed:', e)
-  );
-}
-
-// Subscribe to real-time new bookings — when someone books from the site,
-// their card appears in the pipeline automatically.
-function subscribeToNewBookings() {
-  RFS.subscribeToLeads((payload) => {
-    if (payload.eventType === 'INSERT') {
-      const newLead = RFS.fromSupabaseLead(payload.new);
-      const exists = leads.find(l => l.id === newLead.id);
-      if (!exists) {
-        leads.unshift(newLead);
-        save('leads', leads);
-        renderPipeline();
-        updateNavStats();
-        toast('New booking: ' + newLead.fname + ' ' + newLead.lname);
-      }
-    } else if (payload.eventType === 'UPDATE') {
-      const idx = leads.findIndex(l => l.id === payload.new.id);
-      if (idx >= 0) {
-        leads[idx] = { ...leads[idx], ...RFS.fromSupabaseLead(payload.new) };
-        save('leads', leads);
-        renderPipeline();
-      }
-    }
-  });
-}
 
 // ══════════════════════════════════════════════
 // NAV
@@ -848,7 +785,6 @@ function advanceLead(id) {
   if(lead.stage < 7) {
     lead.stage++;
     save("leads", leads);
-    pushLeadToSupabase(lead);
     renderPipeline();
     const stageName = STAGES[lead.stage];
     toast("Lead advanced to: " + stageName);
@@ -926,7 +862,6 @@ function saveLead() {
   };
   leads.push(lead);
   save('leads', leads);
-  pushLeadToSupabase(lead);
   closeModal('modalLead');
   renderPipeline();
   updateNavStats();
@@ -1168,10 +1103,6 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 setDate();
 updateNavStats();
 renderPipeline();
-
-// Pull from Supabase and subscribe to real-time updates
-syncFromSupabase();
-subscribeToNewBookings();
 </script>
 </body>
 </html>
