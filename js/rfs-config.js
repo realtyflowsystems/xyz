@@ -3,8 +3,8 @@
 // Dashboard → Settings → API → copy Project URL and anon/public key.
 
 const RFS = {
-  supabaseUrl:  'https://YOUR_PROJECT_ID.supabase.co',
-  supabaseKey:  'YOUR_SUPABASE_ANON_KEY',
+  supabaseUrl:  'https://wufmcymarbkrjzaqapuu.supabase.co',
+  supabaseKey:  'YOUR_SUPABASE_ANON_KEY', // Dashboard → Settings → API → anon/public key
 
   // Booking endpoint (same as supabaseUrl + /functions/v1/booking-create)
   bookingEndpoint() {
