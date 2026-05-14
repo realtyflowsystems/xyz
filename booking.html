@@ -189,19 +189,19 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     var phoneDigits=phone.replace(/\D/g,'');
     var formattedPhone='+1'+phoneDigits;
 
-    // Send to Make webhook
-    var webhookUrl='https://hook.us2.make.com/n7oz97mc3hpn27w1dstylknmqwuc7w0v';
+    // Send to Supabase Edge Function (replaces Make.com)
+    // Update RFS_BOOKING_URL after deploying your Supabase project
+    var webhookUrl='https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/booking-create';
     var payload={
       name:name,
       email:email,
       phone:formattedPhone,
-      timestamp:new Date().toISOString(),
       source:'realtyflow.xyz/booking'
     };
 
     fetch(webhookUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','apikey':'YOUR_SUPABASE_ANON_KEY'},
       body:JSON.stringify(payload)
     }).then(function(){
       form.style.display='none';
