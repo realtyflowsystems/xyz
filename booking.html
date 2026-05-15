@@ -201,7 +201,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 
     fetch(webhookUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':'YOUR_SUPABASE_ANON_KEY'},
+      headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1Zm1jeW1hcmJrcmp6YXFhcHV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDQyMzMsImV4cCI6MjA5NDE4MDIzM30.LKDGO75T-ph4tKrSDMA7uXBSgcFgXAlAZzlENmDHQk8'},
       body:JSON.stringify(payload)
     }).then(function(){
       form.style.display='none';
