@@ -45,7 +45,7 @@ serve(async (req: Request) => {
           fname,
           lname,
           email: email.trim().toLowerCase(),
-          phone: phone.trim(),
+          phone: normalizePhone(phone),
           source: source ?? "Booking Page",
           stage: STAGE_BOOKED,
           stage_name: STAGE_NAME_BOOKED,
@@ -155,6 +155,13 @@ serve(async (req: Request) => {
     return json({ error: "Booking failed", detail: msg }, 500);
   }
 });
+
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return `+${digits}`;
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
