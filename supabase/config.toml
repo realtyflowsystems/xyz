@@ -41,13 +41,10 @@ policy = "per_worker"
 [functions.booking-create]
 verify_jwt = false
 
-[functions.sms-reminder]
-verify_jwt = true
-
 [functions.stripe-webhook]
 verify_jwt = false
 
-[functions.email-sequence]
+[functions.sequence-runner]
 verify_jwt = true
 
 [analytics]
