@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -14,6 +14,21 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 .rf-cursor{position:fixed;top:0;left:0;z-index:9999;pointer-events:none;}
 .rf-cursor-dot{width:6px;height:6px;background:var(--gold);border-radius:50%;transform:translate(-50%,-50%);position:absolute;}
 .rf-cursor-ring{width:36px;height:36px;border:1px solid rgba(201,168,76,.4);border-radius:50%;transform:translate(-50%,-50%);transition:width .3s,height .3s,border-color .3s;position:absolute;}
+
+/* ── ACCESS DENIED ── */
+#accessDenied{
+  display:none;position:fixed;inset:0;z-index:9999;background:var(--dark);
+  flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;
+}
+.ad-eyebrow{font-family:"DM Mono",monospace;font-size:9px;color:var(--gold);letter-spacing:.3em;text-transform:uppercase;margin-bottom:16px;}
+.ad-headline{font-family:"Cormorant Garamond",serif;font-size:40px;font-weight:300;margin-bottom:16px;}
+.ad-headline em{font-style:italic;color:var(--gold);}
+.ad-msg{font-size:14px;color:var(--gray);margin-bottom:28px;line-height:1.7;max-width:440px;}
+.ad-link{color:var(--gold);font-size:13px;text-decoration:none;border-bottom:1px solid rgba(201,168,76,.3);}
+.ad-link:hover{border-color:var(--gold);}
+.ad-spinner{width:32px;height:32px;border:2px solid rgba(201,168,76,.2);border-top:2px solid var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 .rf-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 60px;background:rgba(10,10,10,.97);border-bottom:1px solid rgba(201,168,76,.12);backdrop-filter:blur(12px);}
 .rf-nav-logo{font-family:"Cormorant Garamond",serif;font-size:20px;font-weight:600;color:var(--gold);letter-spacing:.08em;text-decoration:none;cursor:none;}
 .rf-nav-logo span{color:var(--gray);font-weight:300;font-size:11px;display:block;letter-spacing:.2em;margin-top:-3px;font-family:"DM Sans",sans-serif;}
@@ -49,7 +64,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 .check-item{display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:none;transition:all .2s;}
 .check-item:last-child{border-bottom:none;}
 .check-item:hover{background:rgba(201,168,76,.025);margin:0 -32px;padding:16px 32px;}
-.check-box{width:20px;height:20px;border:1px solid rgba(201,168,76,.35);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .3s;cursor:none;}
+.check-box{width:20px;height:20px;border:1px solid rgba(201,168,76,.35);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .3s;cursor:pointer;}
 .check-box.done{background:var(--gold);border-color:var(--gold);}
 .check-box.done::after{content:"✓";color:var(--dark);font-size:11px;font-weight:700;}
 .check-content h4{font-size:13px;font-weight:600;margin-bottom:4px;}
@@ -58,7 +73,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 .tag-w1{background:rgba(26,79,138,.2);color:#6BA3D6;}
 .tag-w2{background:rgba(201,168,76,.12);color:var(--gold);}
 .tag-on{background:rgba(30,122,74,.15);color:var(--green-l);}
-.upload-box{border:1px dashed rgba(201,168,76,.25);padding:24px;text-align:center;margin-top:12px;transition:border-color .3s;cursor:none;}
+.upload-box{border:1px dashed rgba(201,168,76,.25);padding:24px;text-align:center;margin-top:12px;transition:border-color .3s;cursor:pointer;}
 .upload-box:hover{border-color:rgba(201,168,76,.5);}
 .upload-box-icon{font-size:28px;margin-bottom:8px;color:var(--gold-d);}
 .upload-box p{font-size:12px;color:var(--gray);line-height:1.6;margin-bottom:6px;}
@@ -97,6 +112,18 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 <body>
 <div class="rf-cursor" id="rfCursor"><div class="rf-cursor-ring" id="rfRing"></div><div class="rf-cursor-dot" id="rfDot"></div></div>
 
+<!-- ACCESS DENIED / LOADING SCREEN -->
+<div id="accessDenied">
+  <div class="ad-spinner" id="adSpinner"></div>
+  <div class="ad-eyebrow">RealtyFlow Systems</div>
+  <h1 class="ad-headline">Client <em>Portal</em></h1>
+  <p class="ad-msg" id="adMsg">Verifying your access...</p>
+  <a href="mailto:erics@realtyflow.xyz" class="ad-link" id="adLink" style="display:none;">erics@realtyflow.xyz</a>
+</div>
+
+<!-- MAIN PORTAL CONTENT (hidden until token valid) -->
+<div id="portalContent" style="display:none;">
+
 <nav class="rf-nav">
   <a href="/" class="rf-nav-logo">RealtyFlow<span>SYSTEMS</span></a>
   <div class="rf-nav-right">
@@ -107,11 +134,11 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 
 <div class="cp-hero">
   <div class="cp-eyebrow"><div class="cp-eyebrow-line"></div><span class="cp-eyebrow-text">Welcome to RealtyFlow Systems</span></div>
-  <h1 class="cp-headline">Your revenue system is<br><em>being built.</em></h1>
+  <h1 class="cp-headline" id="portalHeadline">Your revenue system is<br><em>being built.</em></h1>
   <p class="cp-sub">This portal tracks your onboarding progress, keeps your team contact in one place, and gives you direct access to billing and resources. Your system goes live within 5–7 business days.</p>
   <div class="tier-band">
-    <div class="tier-seg"><div class="tier-seg-label">Your Tier</div><div class="tier-seg-val" id="tierName">Pending Onboarding</div></div>
-    <div class="tier-seg"><div class="tier-seg-label">Investment</div><div class="tier-seg-val sm" id="tierPrice">Confirmed at onboarding</div></div>
+    <div class="tier-seg"><div class="tier-seg-label">Your Tier</div><div class="tier-seg-val" id="tierName">—</div></div>
+    <div class="tier-seg"><div class="tier-seg-label">Investment</div><div class="tier-seg-val sm" id="tierPrice">—</div></div>
     <div class="tier-seg"><div class="tier-seg-label">Status</div><div class="tier-seg-val active"><div class="pulse"></div>Active</div></div>
     <div class="tier-seg"><div class="tier-seg-label">Go-Live Target</div><div class="tier-seg-val sm" id="goLiveVal">—</div></div>
   </div>
@@ -124,14 +151,14 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
       <div class="prog-header"><span>Your Progress</span><span id="progressText">0 of 8 complete</span></div>
       <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
       <div class="checklist">
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>Onboarding Call Scheduled</h4><p>15-minute call to confirm database details, Zillow credentials, and system preferences.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>Database Export Delivered</h4><p>Export your contacts as CSV. Upload below or email to erics@realtyflow.xyz.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>Zillow Access Granted</h4><p>Provide Zillow account access so we can integrate lead routing into your response system.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>SMS Consent Language Approved</h4><p>Review and approve your MA TCPA-compliant opt-in language before sequences activate.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>Localized Scripts Reviewed</h4><p>Review your Cambridge/Boston-localized follow-up scripts. Approve or request edits before go-live.</p><span class="check-tag tag-w2">WEEK 2</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>Dashboard Access Confirmed</h4><p>Receive login credentials and confirm your KPI dashboard is live and data is flowing.</p><span class="check-tag tag-w2">WEEK 2</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>System Goes Live</h4><p>Sub-60 second response system and reactivation engine active. First leads begin flowing.</p><span class="check-tag tag-w2">WEEK 2</span></div></div>
-        <div class="check-item" onclick="toggle(this)"><div class="check-box"></div><div class="check-content"><h4>30-Day Review Call</h4><p>Review dashboard metrics, script performance, and optimization opportunities at Day 28.</p><span class="check-tag tag-on">ONGOING</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>Onboarding Call Scheduled</h4><p>15-minute call to confirm database details, Zillow credentials, and system preferences.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>Database Export Delivered</h4><p>Export your contacts as CSV. Upload below or email to erics@realtyflow.xyz.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>Zillow Access Granted</h4><p>Provide Zillow account access so we can integrate lead routing into your response system.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>SMS Consent Language Approved</h4><p>Review and approve your MA TCPA-compliant opt-in language before sequences activate.</p><span class="check-tag tag-w1">WEEK 1</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>Localized Scripts Reviewed</h4><p>Review your Cambridge/Boston-localized follow-up scripts. Approve or request edits before go-live.</p><span class="check-tag tag-w2">WEEK 2</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>Dashboard Access Confirmed</h4><p>Receive login credentials and confirm your KPI dashboard is live and data is flowing.</p><span class="check-tag tag-w2">WEEK 2</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>System Goes Live</h4><p>Sub-60 second response system and reactivation engine active. First leads begin flowing.</p><span class="check-tag tag-w2">WEEK 2</span></div></div>
+        <div class="check-item"><div class="check-box" onclick="toggle(this)"></div><div class="check-content"><h4>30-Day Review Call</h4><p>Review dashboard metrics, script performance, and optimization opportunities at Day 28.</p><span class="check-tag tag-on">ONGOING</span></div></div>
       </div>
     </div>
 
@@ -173,9 +200,8 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 
     <div class="cp-info">
       <div class="cp-info-title">Billing</div>
-      <div class="info-row"><span class="info-label">Setup Fee</span><span class="info-val" style="color:var(--gray);">Confirmed at onboarding</span></div>
+      <div class="info-row"><span class="info-label">Setup Fee</span><span class="info-val" id="billingSetup">—</span></div>
       <div class="info-row"><span class="info-label">Monthly Plan</span><span class="info-val">Protection Plan</span></div>
-      <div class="info-row"><span class="info-label">Monthly Amount</span><span class="info-val" style="color:var(--gray);">Confirmed at onboarding</span></div>
       <div class="info-row"><span class="info-label">Next Billing</span><span class="info-val" id="nextBilling">—</span></div>
       <a href="https://billing.stripe.com/p/login/9B67sK5V47Unb8k6rj4F200" class="billing-btn" target="_blank" rel="noopener">Manage Billing &rarr;</a>
       <p style="font-size:10px;color:var(--gray);margin-top:10px;line-height:1.6;">Questions: email subject <em>"Billing — [Your Name]"</em>. Cancel with 30-day notice.</p>
@@ -184,7 +210,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     <div class="cp-info">
       <div class="cp-info-title">Resources</div>
       <a href="/offer-comparison" class="action-btn"><span class="action-btn-icon">&#128203;</span><span><span class="action-btn-label">Offer Comparison</span><span class="action-btn-sub">Review all tier features</span></span></a>
-      <a href="index.html#rf-system" class="action-btn"><span class="action-btn-icon">&#9889;</span><span><span class="action-btn-label">How The System Works</span><span class="action-btn-sub">Full system overview</span></span></a>
+      <a href="/" class="action-btn"><span class="action-btn-icon">&#9889;</span><span><span class="action-btn-label">How The System Works</span><span class="action-btn-sub">Full system overview</span></span></a>
       <a href="/privacy" class="action-btn"><span class="action-btn-icon">&#128737;</span><span><span class="action-btn-label">Privacy &amp; Terms</span><span class="action-btn-sub">MA TCPA compliance details</span></span></a>
     </div>
   </div>
@@ -198,20 +224,108 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   <div class="cp-footer-copy">&copy; 2026 RealtyFlow Systems &middot; 820 Massachusetts Ave, Cambridge, MA 02139<br/>SMS opt-out: Reply STOP &bull; MA TCPA Compliant</div>
 </div>
 
+</div><!-- #portalContent -->
+
 <script>
+const PORTAL_DATA_URL = 'https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/portal-data';
+
+// ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
 (function(){
   var dot=document.getElementById('rfDot'),ring=document.getElementById('rfRing'),mx=0,my=0,rx=0,ry=0;
   document.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
   (function a(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a);})();
   document.querySelectorAll('a,button,[onclick]').forEach(function(el){el.addEventListener('mouseenter',function(){ring.style.width='52px';ring.style.height='52px';ring.style.borderColor='rgba(201,168,76,.7)';});el.addEventListener('mouseleave',function(){ring.style.width='36px';ring.style.height='36px';ring.style.borderColor='rgba(201,168,76,.4)';});});
 })();
-function toggle(item){item.querySelector('.check-box').classList.toggle('done');updateProg();}
-function updateProg(){var t=document.querySelectorAll('.check-item').length,d=document.querySelectorAll('.check-box.done').length;document.getElementById('progFill').style.width=Math.round(d/t*100)+'%';document.getElementById('progressText').textContent=d+' of '+t+' complete';}
-var now=new Date(),gl=new Date(now);gl.setDate(now.getDate()+7);var bl=new Date(now);bl.setDate(now.getDate()+30);var fmt={month:'short',day:'numeric',year:'numeric'};
-document.getElementById('goLiveVal').textContent=gl.toLocaleDateString('en-US',fmt);
-document.getElementById('goLiveSide').textContent=gl.toLocaleDateString('en-US',fmt);
-document.getElementById('nextBilling').textContent=bl.toLocaleDateString('en-US',fmt);
-function handleUpload(i){if(i.files[0]){document.getElementById('uploadStatus').textContent='✓ '+i.files[0].name+' selected';document.getElementById('uploadStatus').style.color='#3ECF8E';}}
+
+// ── TOKEN GATE ────────────────────────────────────────────────────────────────
+async function init() {
+  const token = new URLSearchParams(window.location.search).get('token');
+
+  if (!token) {
+    showDenied('No portal token found in this link. Check your onboarding email for the correct URL.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${PORTAL_DATA_URL}?token=${encodeURIComponent(token)}`);
+    if (!res.ok) {
+      showDenied('This portal link is invalid or has expired. Contact erics@realtyflow.xyz to get a fresh link.');
+      return;
+    }
+    const { client } = await res.json();
+    populatePortal(client);
+    document.getElementById('accessDenied').style.display = 'none';
+    document.getElementById('portalContent').style.display = 'block';
+  } catch (e) {
+    showDenied('Unable to load your portal right now. Please try again in a moment.');
+  }
+}
+
+function showDenied(msg) {
+  document.getElementById('adSpinner').style.display = 'none';
+  document.getElementById('adMsg').textContent = msg;
+  document.getElementById('adLink').style.display = 'inline';
+  document.getElementById('accessDenied').style.display = 'flex';
+}
+
+function populatePortal(client) {
+  const lead = client.leads || {};
+  const pay  = client.payments || {};
+  const fmt  = { month:'short', day:'numeric', year:'numeric' };
+
+  // Greeting
+  if (lead.fname) {
+    document.getElementById('portalHeadline').innerHTML =
+      `Welcome, <em>${lead.fname}</em>.<br>Your system is being built.`;
+  }
+
+  // Tier band
+  const tier = pay.tier || lead.tier || '';
+  const tierLabel = tier ? tier.charAt(0).toUpperCase()+tier.slice(1)+' Plan' : 'Your Plan';
+  document.getElementById('tierName').textContent = tierLabel;
+
+  if (pay.amount_cents) {
+    document.getElementById('tierPrice').textContent =
+      '$' + (pay.amount_cents / 100).toLocaleString('en-US');
+    document.getElementById('billingSetup').textContent =
+      '$' + (pay.amount_cents / 100).toLocaleString('en-US');
+  }
+
+  // Go-live date
+  const goLive = client.go_live_date
+    ? new Date(client.go_live_date)
+    : new Date(Date.now() + 7 * 86400000);
+  const goStr = goLive.toLocaleDateString('en-US', fmt);
+  document.getElementById('goLiveVal').textContent  = goStr;
+  document.getElementById('goLiveSide').textContent = goStr;
+
+  // Next billing (~30 days from now)
+  const bl = new Date(Date.now() + 30 * 86400000);
+  document.getElementById('nextBilling').textContent = bl.toLocaleDateString('en-US', fmt);
+}
+
+// ── CHECKLIST ────────────────────────────────────────────────────────────────
+function toggle(box) {
+  box.classList.toggle('done');
+  updateProg();
+}
+function updateProg() {
+  var t=document.querySelectorAll('.check-item').length;
+  var d=document.querySelectorAll('.check-box.done').length;
+  document.getElementById('progFill').style.width=Math.round(d/t*100)+'%';
+  document.getElementById('progressText').textContent=d+' of '+t+' complete';
+}
+
+function handleUpload(i) {
+  if(i.files[0]){
+    document.getElementById('uploadStatus').textContent='✓ '+i.files[0].name+' selected';
+    document.getElementById('uploadStatus').style.color='#3ECF8E';
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('accessDenied').style.display = 'flex';
+init();
 </script>
 </body>
 </html>

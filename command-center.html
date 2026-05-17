@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>RFS Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,400&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --dark:    #0A0A0A;
@@ -26,10 +27,25 @@
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 html,body { background:var(--dark); color:var(--white); font-family:'Instrument Sans',sans-serif; font-weight:300; min-height:100vh; overflow-x:hidden; }
 
-/* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width:4px; height:4px; }
 ::-webkit-scrollbar-track { background:var(--dark2); }
 ::-webkit-scrollbar-thumb { background:var(--gold-d); border-radius:2px; }
+
+/* ── AUTH SCREEN ── */
+#authScreen {
+  position:fixed; inset:0; z-index:9999; background:var(--dark);
+  display:flex; align-items:center; justify-content:center;
+}
+.auth-box { width:100%; max-width:380px; padding:0 24px; }
+.auth-logo { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; color:var(--gold); letter-spacing:.06em; text-align:center; margin-bottom:4px; }
+.auth-sub { font-family:'DM Mono',monospace; font-size:9px; color:var(--gray); letter-spacing:.25em; text-align:center; margin-bottom:36px; }
+.auth-field { width:100%; padding:12px 16px; background:var(--dark2); border:1px solid rgba(201,168,76,.2); color:var(--white); font-family:'Instrument Sans',sans-serif; font-size:14px; outline:none; transition:border-color .2s; margin-bottom:10px; display:block; }
+.auth-field:focus { border-color:var(--gold); }
+.auth-btn { width:100%; padding:13px; background:var(--gold); border:none; color:var(--dark); font-family:'Instrument Sans',sans-serif; font-size:11px; font-weight:600; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; transition:opacity .2s; margin-top:4px; }
+.auth-btn:hover { opacity:.88; }
+.auth-error { color:#ff6b6b; font-size:11px; text-align:center; margin-top:8px; display:none; }
+.auth-hint { font-size:10px; color:#444; text-align:center; margin-top:16px; line-height:1.7; }
+.auth-hint a { color:var(--gold-d); text-decoration:none; }
 
 /* ── NAV ── */
 .nav {
@@ -57,6 +73,8 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 .nav-stat-val { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; color:var(--gold); line-height:1; }
 .nav-stat-label { font-size:9px; color:var(--gray); letter-spacing:.15em; font-family:'DM Mono',monospace; }
 .nav-date { font-family:'DM Mono',monospace; font-size:10px; color:var(--gray); letter-spacing:.1em; }
+.nav-signout { background:none; border:1px solid rgba(255,255,255,.07); color:var(--gray); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.15em; padding:5px 12px; cursor:pointer; transition:all .2s; }
+.nav-signout:hover { border-color:var(--red); color:var(--red); }
 
 /* ── LAYOUT ── */
 .app { padding-top:56px; min-height:100vh; }
@@ -239,9 +257,6 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 }
 .day-input:focus { border-color:var(--gold); }
 .day-input[readonly] { color:var(--gray); cursor:default; }
-.day-total { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-family:'DM Mono',monospace; font-size:9px; }
-.day-total-row { display:flex; justify-content:space-between; color:var(--gray); margin-bottom:2px; }
-.day-total-row span:last-child { color:var(--gold); }
 
 /* ── CLIENTS VIEW ── */
 .clients-wrap { padding:24px 32px; }
@@ -266,7 +281,6 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 }
 .status-active { background:rgba(62,207,142,.12); color:var(--green); }
 .status-onboarding { background:rgba(201,168,76,.12); color:var(--gold); }
-.status-prospect { background:rgba(74,158,255,.12); color:var(--blue); }
 .empty-state {
   text-align:center; padding:80px 32px;
   font-family:'DM Mono',monospace; font-size:11px; color:rgba(255,255,255,.15);
@@ -308,23 +322,14 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 .toast.show { opacity:1; transform:translateY(0); }
 
 /* ── STAGE COLORS ── */
-.s0 .stage-bar-fill { background:#4A9EFF; }
-.s1 .stage-bar-fill { background:#9B74FF; }
-.s2 .stage-bar-fill { background:#FFB347; }
-.s3 .stage-bar-fill { background:#FF8844; }
-.s4 .stage-bar-fill { background:#FF6B6B; }
-.s5 .stage-bar-fill { background:#3ECF8E; }
-.s6 .stage-bar-fill { background:#C9A84C; }
-.s7 .stage-bar-fill { background:#555; }
-
-.s0 .stage-count { color:#4A9EFF; }
-.s1 .stage-count { color:#9B74FF; }
-.s2 .stage-count { color:#FFB347; }
-.s3 .stage-count { color:#FF8844; }
-.s4 .stage-count { color:#FF6B6B; }
-.s5 .stage-count { color:#3ECF8E; }
-.s6 .stage-count { color:#C9A84C; }
-.s7 .stage-count { color:#555; }
+.s0 .stage-bar-fill,.s0 .stage-count { background:#4A9EFF; color:#4A9EFF; }
+.s0 .stage-bar-fill { color:unset; }
+.s1 .stage-bar-fill { background:#9B74FF; } .s1 .stage-count { color:#9B74FF; }
+.s2 .stage-bar-fill { background:#FFB347; } .s2 .stage-count { color:#FFB347; }
+.s3 .stage-bar-fill { background:#FF8844; } .s3 .stage-count { color:#FF8844; }
+.s4 .stage-bar-fill { background:#FF6B6B; } .s4 .stage-count { color:#FF6B6B; }
+.s5 .stage-bar-fill { background:#3ECF8E; } .s5 .stage-count { color:#3ECF8E; }
+.s6 .stage-bar-fill { background:#555;    } .s6 .stage-count { color:#555; }
 
 @media(max-width:900px) {
   .kpi-strip { grid-template-columns:repeat(4,1fr); }
@@ -336,14 +341,30 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 </head>
 <body>
 
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">RealtyFlow</div>
+    <div class="auth-sub">COMMAND CENTER</div>
+    <input class="auth-field" id="authEmail" type="email" value="erics@realtyflow.xyz" placeholder="Email"/>
+    <input class="auth-field" id="authPassword" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')signIn()"/>
+    <button class="auth-btn" onclick="signIn()">Sign In</button>
+    <div class="auth-error" id="authError"></div>
+    <p class="auth-hint">First time? Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a> →<br>Authentication → Users → Add user</p>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until auth) -->
+<div id="mainApp" style="display:none;">
+
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-logo">RealtyFlow<span>COMMAND CENTER</span></div>
   <div class="nav-center">
-    <button class="nav-tab active" onclick="showView('pipeline')">Pipeline</button>
-    <button class="nav-tab" onclick="showView('tracker')">Daily Tracker</button>
-    <button class="nav-tab" onclick="showView('clients')">Clients</button>
-    <button class="nav-tab" onclick="showView('revenue')">Revenue</button>
+    <button class="nav-tab active" onclick="showView('pipeline',this)">Pipeline</button>
+    <button class="nav-tab" onclick="showView('tracker',this)">Daily Tracker</button>
+    <button class="nav-tab" onclick="showView('clients',this)">Clients</button>
+    <button class="nav-tab" onclick="showView('revenue',this)">Revenue</button>
   </div>
   <div class="nav-right">
     <div class="nav-stat">
@@ -355,27 +376,22 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
       <div class="nav-stat-label">Clients</div>
     </div>
     <div class="nav-date" id="navDate"></div>
+    <button class="nav-signout" onclick="signOut()">Sign Out</button>
   </div>
 </nav>
 
 <div class="app">
 
-<!-- ══════════════════════════════════════ -->
-<!-- PIPELINE VIEW                          -->
-<!-- ══════════════════════════════════════ -->
+<!-- PIPELINE VIEW -->
 <div id="view-pipeline" class="view active">
   <div class="pipeline-header">
-    <div>
-      <div class="pipeline-title">RFS Revenue <em>Pipeline</em></div>
-    </div>
+    <div class="pipeline-title">RFS Revenue <em>Pipeline</em></div>
     <button class="btn-add" onclick="openAddLead()">+ Add Lead</button>
   </div>
   <div class="pipeline-board" id="pipelineBoard"></div>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- TRACKER VIEW                           -->
-<!-- ══════════════════════════════════════ -->
+<!-- TRACKER VIEW -->
 <div id="view-tracker" class="view">
   <div class="tracker-wrap">
     <div class="tracker-header">
@@ -391,9 +407,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- CLIENTS VIEW                           -->
-<!-- ══════════════════════════════════════ -->
+<!-- CLIENTS VIEW -->
 <div id="view-clients" class="view">
   <div class="clients-wrap">
     <div class="clients-header">
@@ -403,8 +417,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
     <table class="clients-table">
       <thead>
         <tr>
-          <th>Name</th><th>Phone</th><th>Email</th><th>Brokerage</th>
-          <th>Tier</th><th>Setup Fee</th><th>Monthly</th><th>Status</th><th>Go-Live</th><th>Notes</th>
+          <th>Name</th><th>Phone</th><th>Email</th><th>Tier</th><th>Setup Fee</th><th>Status</th><th>Go-Live</th><th>Notes</th>
         </tr>
       </thead>
       <tbody id="clientsBody"></tbody>
@@ -417,9 +430,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ -->
-<!-- REVENUE VIEW                           -->
-<!-- ══════════════════════════════════════ -->
+<!-- REVENUE VIEW -->
 <div id="view-revenue" class="view">
   <div class="revenue-wrap">
     <div class="rev-title">Revenue <em>Dashboard</em></div>
@@ -469,9 +480,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 
 </div><!-- .app -->
 
-<!-- ══════════════════════════════════════ -->
-<!-- ADD LEAD MODAL                         -->
-<!-- ══════════════════════════════════════ -->
+<!-- ADD LEAD MODAL -->
 <div class="modal-overlay" id="modalLead">
   <div class="modal">
     <div class="modal-header">
@@ -491,8 +500,8 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
         <div class="form-group">
           <label class="form-label">Lead Source</label>
           <select class="form-select" id="lf-source">
-            <option value="Zillow">Zillow</option>
             <option value="Instagram">Instagram</option>
+            <option value="Zillow">Zillow</option>
             <option value="Referral">Referral</option>
             <option value="Other">Other</option>
           </select>
@@ -511,22 +520,17 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
         <div class="form-group"><label class="form-label">Monthly Lead Volume</label><input class="form-input" id="lf-volume" placeholder="e.g. 40" type="number"/></div>
         <div class="form-group"><label class="form-label">Sides Per Year</label><input class="form-input" id="lf-sides" placeholder="e.g. 45" type="number"/></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Avg Response Time</label><input class="form-input" id="lf-response" placeholder="e.g. 2 hours"/></div>
-        <div class="form-group"><label class="form-label">Zillow Spend/Month</label><input class="form-input" id="lf-zillow" placeholder="e.g. $1,500" /></div>
-      </div>
-      <div class="form-group"><label class="form-label">Qualification Notes</label><textarea class="form-textarea" id="lf-notes" placeholder="Key details from DM conversation..."></textarea></div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="lf-notes" placeholder="Key details from DM conversation..."></textarea></div>
       <div class="form-group">
         <label class="form-label">Pipeline Stage</label>
         <select class="form-select" id="lf-stage">
-          <option value="0">New Lead</option>
-          <option value="1">Qualified</option>
-          <option value="2">Audit Booked</option>
-          <option value="3">Audit Complete</option>
-          <option value="4">Proposal Sent</option>
-          <option value="5">Closed — Won</option>
-          <option value="6">Onboarding</option>
-          <option value="7">Closed — Lost</option>
+          <option value="0">New</option>
+          <option value="1">Contacted</option>
+          <option value="2">Booked</option>
+          <option value="3">Audit Done</option>
+          <option value="4">Proposal</option>
+          <option value="5">Client</option>
+          <option value="6">Lost</option>
         </select>
       </div>
     </div>
@@ -547,13 +551,10 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="cf-name" placeholder="Jane Smith"/></div>
-        <div class="form-group"><label class="form-label">Brokerage</label><input class="form-input" id="cf-brokerage" placeholder="RE/MAX Boston"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="cf-email" placeholder="jane@realty.com"/></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="cf-phone"/></div>
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="cf-email"/></div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label class="form-label">Tier</label>
           <select class="form-select" id="cf-tier">
@@ -562,19 +563,11 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
             <option value="Team Infrastructure">Team Infrastructure — $7,500+</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select class="form-select" id="cf-status">
-            <option value="Onboarding">Onboarding</option>
-            <option value="Active">Active</option>
-          </select>
-        </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Setup Fee Paid</label><input class="form-input" id="cf-setup" placeholder="$4,000"/></div>
-        <div class="form-group"><label class="form-label">Monthly Retainer</label><input class="form-input" id="cf-monthly" placeholder="$497"/></div>
+        <div class="form-group"><label class="form-label">Setup Fee Paid</label><input class="form-input" id="cf-setup" placeholder="4000"/></div>
+        <div class="form-group"><label class="form-label">Go-Live Date</label><input class="form-input" id="cf-golive" type="date"/></div>
       </div>
-      <div class="form-group"><label class="form-label">Go-Live Date</label><input class="form-input" id="cf-golive" type="date"/></div>
       <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="cf-notes" placeholder="Key client info, market, database size..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -584,7 +577,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
   </div>
 </div>
 
-<!-- ADD REVENUE MODAL -->
+<!-- LOG PAYMENT MODAL -->
 <div class="modal-overlay" id="modalRevenue">
   <div class="modal">
     <div class="modal-header">
@@ -592,11 +585,9 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
       <button class="modal-close" onclick="closeModal('modalRevenue')">✕</button>
     </div>
     <div class="modal-body">
+      <div class="form-group"><label class="form-label">Lead First Name (must exist in pipeline)</label><input class="form-input" id="rf-name" placeholder="Jane"/></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Client Name</label><input class="form-input" id="rf-name" placeholder="Jane Smith"/></div>
-        <div class="form-group"><label class="form-label">Amount</label><input class="form-input" id="rf-amount" placeholder="$4,000" type="number"/></div>
-      </div>
-      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount ($)</label><input class="form-input" id="rf-amount" placeholder="4000" type="number"/></div>
         <div class="form-group">
           <label class="form-label">Type</label>
           <select class="form-select" id="rf-type">
@@ -605,8 +596,8 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
             <option value="Add-On">Add-On</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="rf-date" type="date"/></div>
       </div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="rf-date" type="date"/></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('modalRevenue')">Cancel</button>
@@ -633,145 +624,167 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 
 <div class="toast" id="toast"></div>
 
+</div><!-- #mainApp -->
+
 <script>
-// ══════════════════════════════════════════════
-// ZAPIER WEBHOOK CONFIG
-// ══════════════════════════════════════════════
-const ZAPIER_HOOKS = {
-  'Audit Booked':    'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
-  'Audit Complete':  'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
-  'Proposal Sent':   'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
-  'Closed — Won':    'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
-  'Closed — Lost':   'https://hooks.zapier.com/hooks/catch/26630010/upf4rvl/',
-};
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SB_URL = 'https://wufmcymarbkrjzaqapuu.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1Zm1jeW1hcmJrcmp6YXFhcHV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDQyMzMsImV4cCI6MjA5NDE4MDIzM30.LKDGO75T-ph4tKrSDMA7uXBSgcFgXAlAZzlENmDHQk8';
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-// SMS messages per stage
-const SMS_TEMPLATES = {
-  'Audit Booked':   (name) => `Hey ${name}, your RealtyFlow Revenue Audit is confirmed. Come ready with your monthly lead volume. See you then. — Erics`,
-  'Audit Complete': (name) => `Hey ${name}, great conversation today. I just sent over your custom offer comparison. Take a look and let me know if you have questions. — Erics`,
-  'Proposal Sent':  (name) => `Hey ${name}, just checking in on what I sent over. Any questions? Happy to jump on a quick call. — Erics`,
-  'Closed — Won':   (name) => `Hey ${name}, welcome to RealtyFlow Systems. You'll receive your portal access within 24 hours. Let's get your system live. — Erics`,
-  'Closed — Lost':  (name) => `Hey ${name}, circling back — market's moving fast in Greater Boston right now. Worth a fresh look at what's changed? — Erics`,
-};
-
-async function fireWebhook(stageName, lead) {
-  const hook = ZAPIER_HOOKS[stageName];
-  if (!hook || !lead.phone) return;
-  const smsBody = SMS_TEMPLATES[stageName] ? SMS_TEMPLATES[stageName](lead.fname) : null;
-  if (!smsBody) return;
-  try {
-    await fetch(hook, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        stage:      stageName,
-        first_name: lead.fname,
-        last_name:  lead.lname,
-        phone:      lead.phone,
-        email:      lead.email,
-        tier:       lead.tier || 'Unknown',
-        sms_body:   smsBody,
-        timestamp:  new Date().toISOString(),
-      })
-    });
-    toast('📱 SMS triggered → ' + lead.fname + ' (' + stageName + ')');
-  } catch(e) {
-    toast('⚠️ Webhook failed — check Zapier');
-  }
-}
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-const STAGES = [
-  'New Lead','Qualified','Audit Booked','Audit Complete',
-  'Proposal Sent','Closed — Won','Onboarding','Closed — Lost'
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+const STAGES = ['New','Contacted','Booked','Audit Done','Proposal','Client','Lost'];
+const TIER_VALUES = { Core:2497, 'Revenue Acceleration':4000, 'Team Infrastructure':7500 };
+const TF = [
+  {k:'dms',      col:'dms',       label:'DMs',        target:280},
+  {k:'followups',col:'follow_ups', label:'Follow-Ups', target:35},
+  {k:'replies',  col:'replies',   label:'Replies',    target:21},
+  {k:'looms',    col:'looms',     label:'Looms',      target:7},
+  {k:'calls',    col:'calls',     label:'Calls',      target:7},
+  {k:'closes',   col:'closes',    label:'Closes',     target:2},
+  {k:'revenue',  col:'revenue',   label:'Revenue',    target:5000},
 ];
-const TIER_VALUES = { 'Core':2497, 'Revenue Acceleration':4000, 'Team Infrastructure':7500 };
 
-function load(key, def) {
-  try { return JSON.parse(localStorage.getItem('rfs_'+key)) ?? def; } catch { return def; }
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let leads=[], clients=[], payments=[], tracker={};
+let currentWeek=0, detailLeadId=null;
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await bootApp();
 }
-function save(key, val) {
-  localStorage.setItem('rfs_'+key, JSON.stringify(val));
+
+async function signIn() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pw    = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.style.display = 'none';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+  await bootApp();
 }
 
-let leads   = load('leads', []);
-let clients = load('clients', []);
-let revenue = load('revenue', []);
-let tracker = load('tracker', {});
-let currentWeek = 0;
-let detailLeadId = null;
+async function bootApp() {
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  setDate();
+  await Promise.all([loadLeads(), loadClients(), loadPayments()]);
+  updateNavStats();
+  renderPipeline();
+}
 
-// ══════════════════════════════════════════════
-// NAV
-// ══════════════════════════════════════════════
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+async function signOut() {
+  await sb.auth.signOut();
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('authPassword').value = '';
+  leads=[]; clients=[]; payments=[]; tracker={};
+}
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+async function loadLeads() {
+  const { data, error } = await sb.from('leads').select('*').order('created_at',{ascending:false});
+  if (error) { console.error('loadLeads:', error); return; }
+  leads = data || [];
+}
+
+async function loadClients() {
+  const { data, error } = await sb.from('clients')
+    .select('*, leads(fname,lname,email,phone,tier), payments(amount_cents,tier,description)')
+    .order('created_at',{ascending:false});
+  if (error) { console.error('loadClients:', error); return; }
+  clients = data || [];
+}
+
+async function loadPayments() {
+  const { data, error } = await sb.from('payments')
+    .select('*, leads(fname,lname)')
+    .order('created_at',{ascending:false});
+  if (error) { console.error('loadPayments:', error); return; }
+  payments = data || [];
+}
+
+async function loadTrackerWeek() {
+  const days  = getWeekDays(currentWeek);
+  const start = days[0].toISOString().slice(0,10);
+  const end   = days[6].toISOString().slice(0,10);
+  const { data } = await sb.from('daily_activity').select('*').gte('date',start).lte('date',end);
+  tracker = {};
+  (data||[]).forEach(row => {
+    tracker[row.date] = {
+      dms:      row.dms||0,      followups:row.follow_ups||0,
+      replies:  row.replies||0,  looms:    row.looms||0,
+      calls:    row.calls||0,    closes:   row.closes||0,
+      revenue:  row.revenue||0,
+    };
+  });
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showView(name, btn) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
-  event.target.classList.add('active');
+  if (btn) btn.classList.add('active');
   if(name==='pipeline') renderPipeline();
-  if(name==='tracker') renderTracker();
-  if(name==='clients') renderClients();
-  if(name==='revenue') renderRevenue();
+  if(name==='tracker')  loadTrackerWeek().then(renderTracker);
+  if(name==='clients')  renderClients();
+  if(name==='revenue')  renderRevenue();
 }
 
 function updateNavStats() {
-  const total = revenue.reduce((s,r)=>s+Number(r.amount),0);
-  document.getElementById('navRevenue').textContent = '$'+total.toLocaleString();
+  const total = payments.reduce((s,p)=>s+(p.amount_cents||0),0);
+  document.getElementById('navRevenue').textContent = '$'+(total/100).toLocaleString();
   document.getElementById('navClients').textContent = clients.length;
 }
 
 function setDate() {
-  const d = new Date();
-  const opts = {weekday:'short',month:'short',day:'numeric'};
-  document.getElementById('navDate').textContent = d.toLocaleDateString('en-US',opts).toUpperCase();
+  document.getElementById('navDate').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
 }
 
-// ══════════════════════════════════════════════
-// PIPELINE
-// ══════════════════════════════════════════════
+// ── PIPELINE ──────────────────────────────────────────────────────────────────
 function renderPipeline() {
   const board = document.getElementById('pipelineBoard');
   board.innerHTML = '';
-  STAGES.forEach((stage, si) => {
-    const stageLeads = leads.filter(l => l.stage === si);
-    const stageValue = stageLeads.reduce((s,l) => s+(TIER_VALUES[l.tier]||2497), 0);
-    const maxLeads = Math.max(...STAGES.map((_,i)=>leads.filter(l=>l.stage===i).length),1);
-    const fillPct = maxLeads > 0 ? (stageLeads.length/maxLeads*100) : 0;
-
+  STAGES.forEach((stage,si) => {
+    const sl  = leads.filter(l=>l.stage===si);
+    const sv  = sl.reduce((s,l)=>s+(TIER_VALUES[l.tier]||2497),0);
+    const max = Math.max(...STAGES.map((_,i)=>leads.filter(l=>l.stage===i).length),1);
+    const fp  = sl.length/max*100;
     const col = document.createElement('div');
     col.className = `stage-col s${si}`;
     col.innerHTML = `
       <div class="stage-header">
         <div class="stage-name">${stage}</div>
         <div class="stage-meta">
-          <div class="stage-count">${stageLeads.length}</div>
-          <div class="stage-value">${stageValue>0?'$'+stageValue.toLocaleString():''}</div>
+          <div class="stage-count">${sl.length}</div>
+          <div class="stage-value">${sv>0?'$'+sv.toLocaleString():''}</div>
         </div>
-        <div class="stage-bar"><div class="stage-bar-fill" style="width:${fillPct}%"></div></div>
+        <div class="stage-bar"><div class="stage-bar-fill" style="width:${fp}%"></div></div>
       </div>
       <div class="stage-cards" id="stage-${si}">
-        ${stageLeads.length===0?'<div class="stage-empty">empty</div>':''}
-        ${stageLeads.map(l=>renderCard(l,si)).join('')}
+        ${sl.length===0?'<div class="stage-empty">empty</div>':''}
+        ${sl.map(l=>renderCard(l)).join('')}
       </div>`;
     board.appendChild(col);
   });
 }
 
-function renderCard(lead, si) {
-  const srcClass = lead.source==='Zillow'?'source-zillow':lead.source==='Instagram'?'source-instagram':'source-referral';
+function renderCard(lead) {
+  const src = lead.source||'';
+  const cls = src==='Zillow'?'source-zillow':src==='Instagram'?'source-instagram':'source-referral';
   return `
     <div class="lead-card" onclick="openDetail('${lead.id}')">
-      <div class="card-name">${lead.fname} ${lead.lname}</div>
-      <div class="card-source ${srcClass}">${lead.source||'—'}</div>
+      <div class="card-name">${lead.fname} ${lead.lname||''}</div>
+      <div class="card-source ${cls}">${src||'Direct'}</div>
       <div class="card-meta">
-        ${lead.volume?`Vol: <span>${lead.volume}/mo</span> &nbsp;`:''}
+        ${lead.volume?`Vol: <span>${lead.volume}/mo</span>&nbsp;`:''}
         ${lead.sides?`Sides: <span>${lead.sides}/yr</span>`:''}
       </div>
       ${lead.tier?`<div class="card-tier">${lead.tier}</div>`:''}
-      <div class="card-date">${formatDate(lead.created)}</div>
+      <div class="card-date">${formatDate(lead.created_at)}</div>
       <div class="card-actions">
         <button class="card-btn advance" onclick="event.stopPropagation();advanceLead('${lead.id}')">Advance →</button>
         <button class="card-btn" onclick="event.stopPropagation();openDetail('${lead.id}')">View</button>
@@ -779,179 +792,136 @@ function renderCard(lead, si) {
     </div>`;
 }
 
-function advanceLead(id) {
+async function advanceLead(id) {
   const lead = leads.find(l=>l.id===id);
-  if(!lead) return;
-  if(lead.stage < 7) {
-    lead.stage++;
-    save("leads", leads);
-    renderPipeline();
-    const stageName = STAGES[lead.stage];
-    toast("Lead advanced to: " + stageName);
-    if(lead.phone) { fireWebhook(stageName, lead); }
-    else { toast("⚠️ No phone — SMS skipped for " + lead.fname); }
+  if(!lead||lead.stage>=6) return;
+  const newStage  = lead.stage+1;
+  const stageName = STAGES[newStage];
+  const {error}   = await sb.from('leads').update({stage:newStage,stage_name:stageName}).eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  lead.stage=newStage; lead.stage_name=stageName;
+  renderPipeline();
+  toast('Advanced to: '+stageName);
+  // Enroll in matching sequence
+  const {data:seq} = await sb.from('sequences')
+    .select('id,name,sequence_steps(*)')
+    .eq('trigger_stage',newStage).eq('active',true).maybeSingle();
+  if(seq?.sequence_steps?.length){
+    const first = [...seq.sequence_steps].sort((a,b)=>a.step_number-b.step_number)[0];
+    await sb.from('sequence_enrollments').insert({
+      lead_id:lead.id, sequence_id:seq.id, current_step:0,
+      next_send_at:new Date(Date.now()+(first.delay_hours||0)*3600000).toISOString(),
+      started_at:new Date().toISOString(),
+    });
+    toast('Enrolled: '+seq.name);
   }
 }
 
-function deleteLead() {
-  if(!detailLeadId) return;
-  if(!confirm('Delete this lead?')) return;
-  leads = leads.filter(l=>l.id!==detailLeadId);
-  save('leads',leads);
+async function deleteLead() {
+  if(!detailLeadId||!confirm('Delete this lead?')) return;
+  await sb.from('leads').delete().eq('id',detailLeadId);
+  leads=leads.filter(l=>l.id!==detailLeadId);
   closeModal('modalDetail');
   renderPipeline();
   toast('Lead deleted');
 }
 
-function advanceLeadFromDetail() {
-  if(detailLeadId) { advanceLead(detailLeadId); closeModal('modalDetail'); }
-}
+function advanceLeadFromDetail(){if(detailLeadId){advanceLead(detailLeadId);closeModal('modalDetail');}}
 
-// ══════════════════════════════════════════════
-// LEAD DETAIL
-// ══════════════════════════════════════════════
+// ── LEAD DETAIL ───────────────────────────────────────────────────────────────
 function openDetail(id) {
-  const lead = leads.find(l=>l.id===id);
+  const lead=leads.find(l=>l.id===id);
   if(!lead) return;
-  detailLeadId = id;
-  document.getElementById('detailName').textContent = lead.fname+' '+lead.lname;
-  document.getElementById('detailBody').innerHTML = `
+  detailLeadId=id;
+  document.getElementById('detailName').textContent=(lead.fname+' '+(lead.lname||'')).trim();
+  document.getElementById('detailBody').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-      ${field('Stage', STAGES[lead.stage])}
-      ${field('Source', lead.source||'—')}
-      ${field('Phone', lead.phone||'—')}
-      ${field('Email', lead.email||'—')}
-      ${field('Lead Volume', lead.volume?lead.volume+'/mo':'—')}
-      ${field('Sides/Year', lead.sides||'—')}
-      ${field('Response Time', lead.response||'—')}
-      ${field('Zillow Spend', lead.zillow||'—')}
-      ${field('Tier', lead.tier||'—')}
-      ${field('Added', formatDate(lead.created))}
+      ${field('Stage',STAGES[lead.stage]||'—')}
+      ${field('Source',lead.source||'—')}
+      ${field('Phone',lead.phone||'—')}
+      ${field('Email',lead.email||'—')}
+      ${field('Lead Volume',lead.volume?lead.volume+'/mo':'—')}
+      ${field('Sides/Year',lead.sides||'—')}
+      ${field('Tier',lead.tier||'—')}
+      ${field('Added',formatDate(lead.created_at))}
     </div>
     ${lead.notes?`<div class="form-group"><label class="form-label">Notes</label><div style="padding:10px 12px;background:var(--dark3);font-size:12px;color:var(--gray-l);line-height:1.6;">${lead.notes}</div></div>`:''}
   `;
   document.getElementById('modalDetail').classList.add('open');
 }
 
-function field(label, val) {
+function field(label,val){
   return `<div><div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px;">${label}</div><div style="font-size:13px;color:var(--gray-l);">${val}</div></div>`;
 }
 
-// ══════════════════════════════════════════════
-// ADD LEAD
-// ══════════════════════════════════════════════
-function openAddLead() { document.getElementById('modalLead').classList.add('open'); }
+// ── ADD LEAD ──────────────────────────────────────────────────────────────────
+function openAddLead(){document.getElementById('modalLead').classList.add('open');}
 
-function saveLead() {
-  const fname = document.getElementById('lf-fname').value.trim();
-  if(!fname) { toast('First name required'); return; }
-  const lead = {
-    id: 'l'+Date.now(),
-    fname, lname: document.getElementById('lf-lname').value.trim(),
-    phone: document.getElementById('lf-phone').value.trim(),
-    email: document.getElementById('lf-email').value.trim(),
-    source: document.getElementById('lf-source').value,
-    tier: document.getElementById('lf-tier').value,
-    volume: document.getElementById('lf-volume').value,
-    sides: document.getElementById('lf-sides').value,
-    response: document.getElementById('lf-response').value.trim(),
-    zillow: document.getElementById('lf-zillow').value.trim(),
-    notes: document.getElementById('lf-notes').value.trim(),
-    stage: parseInt(document.getElementById('lf-stage').value),
-    created: new Date().toISOString()
-  };
-  leads.push(lead);
-  save('leads', leads);
+async function saveLead(){
+  const fname=document.getElementById('lf-fname').value.trim();
+  if(!fname){toast('First name required');return;}
+  const stage=parseInt(document.getElementById('lf-stage').value);
+  const {data,error}=await sb.from('leads').insert({
+    fname, lname:document.getElementById('lf-lname').value.trim(),
+    phone:document.getElementById('lf-phone').value.trim(),
+    email:document.getElementById('lf-email').value.trim().toLowerCase()||null,
+    source:document.getElementById('lf-source').value,
+    tier:document.getElementById('lf-tier').value||null,
+    volume:parseInt(document.getElementById('lf-volume').value)||null,
+    sides:parseInt(document.getElementById('lf-sides').value)||null,
+    notes:document.getElementById('lf-notes').value.trim(),
+    stage, stage_name:STAGES[stage],
+  }).select().single();
+  if(error){toast('Error: '+error.message);return;}
+  leads.unshift(data);
   closeModal('modalLead');
   renderPipeline();
   updateNavStats();
   toast('Lead added: '+fname);
-  ['lf-fname','lf-lname','lf-phone','lf-email','lf-volume','lf-sides','lf-response','lf-zillow','lf-notes'].forEach(id=>document.getElementById(id).value='');
+  ['lf-fname','lf-lname','lf-phone','lf-email','lf-volume','lf-sides','lf-notes'].forEach(id=>document.getElementById(id).value='');
 }
 
-// ══════════════════════════════════════════════
-// TRACKER
-// ══════════════════════════════════════════════
-function getWeekDays(offset) {
-  const today = new Date();
-  const day = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (day===0?6:day-1) + offset*7);
-  return Array.from({length:7},(_,i)=>{
-    const d = new Date(monday);
-    d.setDate(monday.getDate()+i);
-    return d;
-  });
+// ── TRACKER ───────────────────────────────────────────────────────────────────
+function getWeekDays(offset){
+  const today=new Date(), day=today.getDay(), monday=new Date(today);
+  monday.setDate(today.getDate()-(day===0?6:day-1)+offset*7);
+  return Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
 }
 
-function renderTracker() {
-  const days = getWeekDays(currentWeek);
-  const today = new Date();
-  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  document.getElementById('weekLabel').textContent = fmt(days[0])+' — '+fmt(days[6]);
+function renderTracker(){
+  const days=getWeekDays(currentWeek), today=new Date();
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('weekLabel').textContent=fmt(days[0])+' — '+fmt(days[6]);
 
-  // Aggregate KPIs for this week
-  let totals = {dms:0,followups:0,replies:0,looms:0,calls:0,closes:0,revenue:0};
-  days.forEach(d => {
-    const key = d.toISOString().slice(0,10);
-    const t = tracker[key] || {};
-    totals.dms       += Number(t.dms||0);
-    totals.followups += Number(t.followups||0);
-    totals.replies   += Number(t.replies||0);
-    totals.looms     += Number(t.looms||0);
-    totals.calls     += Number(t.calls||0);
-    totals.closes    += Number(t.closes||0);
-    totals.revenue   += Number(t.revenue||0);
+  let totals={};TF.forEach(f=>totals[f.k]=0);
+  days.forEach(d=>{
+    const t=tracker[d.toISOString().slice(0,10)]||{};
+    TF.forEach(f=>totals[f.k]+=Number(t[f.k]||0));
   });
 
-  const targets = {dms:280,followups:35,replies:21,looms:7,calls:7,closes:2,revenue:5000};
-  const kpiDefs = [
-    {key:'dms',label:'DMs Sent',target:'280/wk'},
-    {key:'followups',label:'Follow-Ups',target:'35/wk'},
-    {key:'replies',label:'Replies',target:'21/wk'},
-    {key:'looms',label:'Looms',target:'7/wk'},
-    {key:'calls',label:'Calls Booked',target:'7/wk'},
-    {key:'closes',label:'Closes',target:'2/wk'},
-    {key:'revenue',label:'Revenue',target:'$5K/wk'},
-  ];
-
-  document.getElementById('kpiStrip').innerHTML = kpiDefs.map(k=>{
-    const val = totals[k.key];
-    const pct = Math.min(100, Math.round(val/targets[k.key]*100));
-    const on = pct >= 70;
-    const display = k.key==='revenue'?'$'+val.toLocaleString():val;
+  document.getElementById('kpiStrip').innerHTML=TF.map(f=>{
+    const val=totals[f.k], pct=Math.min(100,Math.round(val/f.target*100)), on=pct>=70;
+    const disp=f.k==='revenue'?'$'+val.toLocaleString():val;
     return `<div class="kpi-cell">
-      <div class="kpi-val">${display}</div>
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-target">${k.target}</div>
+      <div class="kpi-val">${disp}</div>
+      <div class="kpi-label">${f.label}</div>
+      <div class="kpi-target">${f.k==='revenue'?'$'+f.target:f.target}/wk</div>
       <div class="kpi-pct ${on?'on-track':'behind'}">${pct}% ${on?'✓':'↑'}</div>
     </div>`;
   }).join('');
 
-  const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-  document.getElementById('dayGrid').innerHTML = days.map((d,i)=>{
-    const key = d.toISOString().slice(0,10);
-    const t = tracker[key] || {};
-    const isToday = d.toDateString()===today.toDateString();
-    const isFuture = d > today;
-    const dayTotal = Number(t.dms||0)+Number(t.followups||0);
+  const dayNames=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  document.getElementById('dayGrid').innerHTML=days.map((d,i)=>{
+    const key=d.toISOString().slice(0,10), t=tracker[key]||{};
+    const isToday=d.toDateString()===today.toDateString(), isFuture=d>today;
     return `<div class="day-card ${isToday?'today':''} ${isFuture?'future':''}">
-      <div class="day-label">
-        <span>${dayNames[i]} ${d.getDate()}</span>
-        ${isToday?'<span class="today-dot"></span>':''}
-      </div>
-      ${dayField('DMs',key,'dms',t.dms,isFuture)}
-      ${dayField('Follow-Ups',key,'followups',t.followups,isFuture)}
-      ${dayField('Replies',key,'replies',t.replies,isFuture)}
-      ${dayField('Looms',key,'looms',t.looms,isFuture)}
-      ${dayField('Calls',key,'calls',t.calls,isFuture)}
-      ${dayField('Closes',key,'closes',t.closes,isFuture)}
-      ${dayField('Revenue $',key,'revenue',t.revenue,isFuture)}
+      <div class="day-label"><span>${dayNames[i]} ${d.getDate()}</span>${isToday?'<span class="today-dot"></span>':''}</div>
+      ${TF.map(f=>dayField(f.label,key,f.k,t[f.k],isFuture)).join('')}
     </div>`;
   }).join('');
 }
 
-function dayField(label, dateKey, field, val, readonly) {
+function dayField(label,dateKey,field,val,readonly){
   return `<div class="day-field">
     <div class="day-field-label">${label}</div>
     <input class="day-input" type="number" value="${val||''}" min="0"
@@ -960,149 +930,152 @@ function dayField(label, dateKey, field, val, readonly) {
   </div>`;
 }
 
-function saveDay(dateKey, field, val) {
-  if(!tracker[dateKey]) tracker[dateKey]={};
-  tracker[dateKey][field] = Number(val);
-  save('tracker', tracker);
-  renderTrackerKPIs();
-}
-
-function renderTrackerKPIs() { renderTracker(); }
-
-function changeWeek(dir) {
-  currentWeek += dir;
+async function saveDay(dateKey,field,val){
+  const tf=TF.find(f=>f.k===field);if(!tf)return;
+  const {data:existing}=await sb.from('daily_activity').select('id').eq('date',dateKey).maybeSingle();
+  if(existing){
+    await sb.from('daily_activity').update({[tf.col]:Number(val)}).eq('date',dateKey);
+  }else{
+    await sb.from('daily_activity').insert({date:dateKey,[tf.col]:Number(val)});
+  }
+  if(!tracker[dateKey])tracker[dateKey]={};
+  tracker[dateKey][field]=Number(val);
   renderTracker();
 }
 
-// ══════════════════════════════════════════════
-// CLIENTS
-// ══════════════════════════════════════════════
-function openAddClient() { document.getElementById('modalClient').classList.add('open'); }
+async function changeWeek(dir){currentWeek+=dir;await loadTrackerWeek();renderTracker();}
 
-function saveClient() {
-  const name = document.getElementById('cf-name').value.trim();
-  if(!name) { toast('Name required'); return; }
-  const client = {
-    id:'c'+Date.now(), name,
-    brokerage: document.getElementById('cf-brokerage').value.trim(),
-    phone: document.getElementById('cf-phone').value.trim(),
-    email: document.getElementById('cf-email').value.trim(),
-    tier: document.getElementById('cf-tier').value,
-    status: document.getElementById('cf-status').value,
-    setup: document.getElementById('cf-setup').value.trim(),
-    monthly: document.getElementById('cf-monthly').value.trim(),
-    golive: document.getElementById('cf-golive').value,
-    notes: document.getElementById('cf-notes').value.trim(),
-  };
-  clients.push(client);
-  save('clients', clients);
+// ── CLIENTS ───────────────────────────────────────────────────────────────────
+function openAddClient(){document.getElementById('modalClient').classList.add('open');}
+
+async function saveClient(){
+  const nameRaw=document.getElementById('cf-name').value.trim();
+  if(!nameRaw){toast('Name required');return;}
+  const parts=nameRaw.split(/\s+/), fname=parts[0], lname=parts.slice(1).join(' ')||'';
+  const email=document.getElementById('cf-email').value.trim().toLowerCase();
+  const phone=document.getElementById('cf-phone').value.trim();
+  const tier=document.getElementById('cf-tier').value;
+  const cents=Math.round(parseFloat(document.getElementById('cf-setup').value.replace(/[^0-9.]/g,'')||'0')*100);
+  const notes=document.getElementById('cf-notes').value.trim();
+  const goLive=document.getElementById('cf-golive').value||null;
+
+  if(!email){toast('Email required to find or create lead');return;}
+  const {data:lead,error:le}=await sb.from('leads')
+    .upsert({fname,lname,email,phone,tier,notes,stage:5,stage_name:'Client'},{onConflict:'email'})
+    .select().single();
+  if(le){toast('Error: '+le.message);return;}
+  const {data:payment,error:pe}=await sb.from('payments').insert({
+    lead_id:lead.id, stripe_payment_intent_id:'manual_'+Date.now(),
+    amount_cents:cents, currency:'usd', status:'succeeded', tier,
+  }).select().single();
+  if(pe){toast('Error: '+pe.message);return;}
+  const {error:ce}=await sb.from('clients').insert({
+    lead_id:lead.id, payment_id:payment.id, go_live_date:goLive, notes,
+  });
+  if(ce){toast('Error: '+ce.message);return;}
+  await Promise.all([loadLeads(),loadClients(),loadPayments()]);
   closeModal('modalClient');
   renderClients();
   updateNavStats();
-  toast('Client added: '+name);
+  toast('Client added: '+fname);
+  ['cf-name','cf-email','cf-phone','cf-setup','cf-notes'].forEach(id=>document.getElementById(id).value='');
 }
 
-function renderClients() {
-  const body = document.getElementById('clientsBody');
-  const empty = document.getElementById('clientsEmpty');
-  if(clients.length===0) { body.innerHTML=''; empty.style.display='block'; return; }
+function renderClients(){
+  const body=document.getElementById('clientsBody'), empty=document.getElementById('clientsEmpty');
+  if(!clients.length){body.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  body.innerHTML = clients.map(c=>`
-    <tr>
-      <td><div class="client-name">${c.name}</div></td>
-      <td>${c.phone||'—'}</td>
-      <td>${c.email||'—'}</td>
-      <td>${c.brokerage||'—'}</td>
-      <td><div class="card-tier" style="display:inline-block;">${c.tier}</div></td>
-      <td style="color:var(--green);font-family:'Cormorant Garamond',serif;font-size:16px;">${c.setup||'—'}</td>
-      <td>${c.monthly||'—'}</td>
-      <td><span class="status-badge ${c.status==='Active'?'status-active':'status-onboarding'}">${c.status}</span></td>
-      <td style="font-family:'DM Mono',monospace;font-size:10px;">${c.golive||'—'}</td>
-      <td style="max-width:200px;font-size:11px;color:var(--gray);">${c.notes||'—'}</td>
-    </tr>`).join('');
+  body.innerHTML=clients.map(c=>{
+    const l=c.leads||{}, p=c.payments||{};
+    const name=((l.fname||'')+(l.lname?' '+l.lname:'')).trim()||'—';
+    const amt=p.amount_cents?'$'+(p.amount_cents/100).toLocaleString():'—';
+    const tier=l.tier||p.tier||'—';
+    return `<tr>
+      <td><div class="client-name">${name}</div></td>
+      <td>${l.phone||'—'}</td>
+      <td>${l.email||'—'}</td>
+      <td><div class="card-tier" style="display:inline-block;">${tier}</div></td>
+      <td style="color:var(--green);font-family:'Cormorant Garamond',serif;font-size:16px;">${amt}</td>
+      <td><span class="status-badge status-active">Active</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${c.go_live_date||'—'}</td>
+      <td style="max-width:180px;font-size:11px;color:var(--gray);">${c.notes||'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
-// ══════════════════════════════════════════════
-// REVENUE
-// ══════════════════════════════════════════════
-function openAddRevenue() {
-  document.getElementById('rf-date').value = new Date().toISOString().slice(0,10);
+// ── REVENUE ───────────────────────────────────────────────────────────────────
+function openAddRevenue(){
+  document.getElementById('rf-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('modalRevenue').classList.add('open');
 }
 
-function saveRevenue() {
-  const name = document.getElementById('rf-name').value.trim();
-  const amount = document.getElementById('rf-amount').value;
-  if(!name||!amount) { toast('Name and amount required'); return; }
-  const entry = {
-    id:'r'+Date.now(), name, amount:Number(amount),
-    type: document.getElementById('rf-type').value,
-    date: document.getElementById('rf-date').value,
-  };
-  revenue.push(entry);
-  save('revenue',revenue);
+async function saveRevenue(){
+  const fname=document.getElementById('rf-name').value.trim();
+  const amount=parseFloat(document.getElementById('rf-amount').value);
+  if(!fname||!amount){toast('Name and amount required');return;}
+  const {data:lead}=await sb.from('leads').select('id').ilike('fname',fname).maybeSingle();
+  if(!lead){toast('No lead named "'+fname+'" — add them to the pipeline first.');return;}
+  const {error}=await sb.from('payments').insert({
+    lead_id:lead.id,
+    stripe_payment_intent_id:'manual_'+Date.now(),
+    amount_cents:Math.round(amount*100), currency:'usd', status:'succeeded',
+    description:document.getElementById('rf-type').value,
+  });
+  if(error){toast('Error: '+error.message);return;}
+  await loadPayments();
   closeModal('modalRevenue');
   renderRevenue();
   updateNavStats();
-  toast('Payment logged: $'+Number(amount).toLocaleString());
+  toast('Payment logged: $'+amount.toLocaleString());
 }
 
-function renderRevenue() {
-  const total = revenue.reduce((s,r)=>s+r.amount,0);
-  const mrr = revenue.filter(r=>r.type==='Retainer').reduce((s,r)=>s+r.amount,0);
-  const pipelineVal = leads.filter(l=>l.stage>0&&l.stage<5).reduce((s,l)=>s+(TIER_VALUES[l.tier]||2497),0);
-  const activePipe = leads.filter(l=>l.stage>0&&l.stage<5).length;
-
-  document.getElementById('revTotal').textContent = '$'+total.toLocaleString();
-  document.getElementById('revMRR').textContent = '$'+mrr.toLocaleString();
-  document.getElementById('revPipeline').textContent = '$'+pipelineVal.toLocaleString();
-
-  const pct = Math.min(100,Math.round(total/25000*100));
-  document.getElementById('revPct').textContent = pct+'%';
-  document.getElementById('revBar').style.width = pct+'%';
-
-  const mPct = Math.min(100,Math.round(mrr/2000*100));
-  document.getElementById('mrrPct').textContent = mPct+'%';
-  document.getElementById('mrrBar').style.width = mPct+'%';
-  document.getElementById('pipeCount').textContent = activePipe+' deals';
-  document.getElementById('pipeBar').style.width = Math.min(100,activePipe/10*100)+'%';
-
-  if(revenue.length===0) {
-    document.getElementById('revLog').innerHTML = `<div class="empty-state" style="padding:40px;"><strong>No transactions yet.</strong>First payment logged here when it lands.</div>`;
+function renderRevenue(){
+  const total=payments.reduce((s,p)=>s+(p.amount_cents||0),0)/100;
+  const mrr=payments.filter(p=>p.description==='Monthly Retainer').reduce((s,p)=>s+(p.amount_cents||0),0)/100;
+  const pl=leads.filter(l=>l.stage>0&&l.stage<5);
+  const pv=pl.reduce((s,l)=>s+(TIER_VALUES[l.tier]||2497),0);
+  document.getElementById('revTotal').textContent='$'+total.toLocaleString();
+  document.getElementById('revMRR').textContent='$'+mrr.toLocaleString();
+  document.getElementById('revPipeline').textContent='$'+pv.toLocaleString();
+  const pct=Math.min(100,Math.round(total/25000*100));
+  document.getElementById('revPct').textContent=pct+'%';
+  document.getElementById('revBar').style.width=pct+'%';
+  const mp=Math.min(100,Math.round(mrr/2000*100));
+  document.getElementById('mrrPct').textContent=mp+'%';
+  document.getElementById('mrrBar').style.width=mp+'%';
+  document.getElementById('pipeCount').textContent=pl.length+' deals';
+  document.getElementById('pipeBar').style.width=Math.min(100,pl.length/10*100)+'%';
+  if(!payments.length){
+    document.getElementById('revLog').innerHTML=`<div class="empty-state" style="padding:40px;"><strong>No transactions yet.</strong>First payment logged here when it lands.</div>`;
     return;
   }
-  const sorted = [...revenue].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById('revLog').innerHTML = sorted.map(r=>`
-    <div class="rev-log-row">
-      <div class="rev-log-date">${r.date}</div>
-      <div class="rev-log-name">${r.name}</div>
-      <div class="rev-log-tier">${r.type}</div>
-      <div class="rev-log-amt">+$${Number(r.amount).toLocaleString()}</div>
-    </div>`).join('');
+  const sorted=[...payments].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  document.getElementById('revLog').innerHTML=sorted.map(p=>{
+    const l=p.leads||{};
+    const name=((l.fname||'')+(l.lname?' '+l.lname:'')).trim()||'Manual';
+    const amt='$'+((p.amount_cents||0)/100).toLocaleString();
+    const dt=p.created_at?new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+    return `<div class="rev-log-row">
+      <div class="rev-log-date">${dt}</div>
+      <div class="rev-log-name">${name}</div>
+      <div class="rev-log-tier">${p.description||p.tier||'—'}</div>
+      <div class="rev-log-amt">+${amt}</div>
+    </div>`;
+  }).join('');
 }
 
-// ══════════════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════════════
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function formatDate(iso) { if(!iso) return '—'; return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function formatDate(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
 }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
-// Close modals on overlay click
-document.querySelectorAll('.modal-overlay').forEach(o=>{
-  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
-});
-
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-setDate();
-updateNavStats();
-renderPipeline();
+// ── INIT ──────────────────────────────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>
