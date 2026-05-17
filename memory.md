@@ -3,99 +3,180 @@
 ## Project Overview
 - **Domain:** realtyflow.xyz (GoDaddy)
 - **Hosting:** GitHub Pages → repo: realtyflowsystems/xyz
-- **Supabase Project ID:** wufmcymarbkrjzaqapuu
-- **Supabase Preview Branch (PR #3):** evwhptpedqirlqafljbd (merged, no longer active)
+- **Supabase Project:** `realtyflow-systems` — ID: `wufmcymarbkrjzaqapuu` — ACTIVE_HEALTHY
+- **Supabase URL:** `https://wufmcymarbkrjzaqapuu.supabase.co`
+- **Stripe Account:** `acct_1T5OyWAM1e66iBUi` — "RealtyFlow Systems"
 - **Founder:** Erics — solo operator, Cambridge MA
 - **Target market:** Real estate agents in Cambridge, Somerville, Newton, Brookline
 
 ---
 
-## Session: May 14, 2026
+## Actual Database Schema (verified live — May 17, 2026)
 
-### What We Built (PR #3 — merged to main)
+### Tables
 
-Full self-hosted revenue operating system replacing Make.com, GoHighLevel, and Twilio markup.
+**`leads`** — everyone who contacts or books
+- `id`, `fname`, `lname`, `email` (unique), `phone`
+- `source` (default: 'Booking Page')
+- `stage` INTEGER (0=New, 1=Contacted, 2=Booked, 3=Audit Done, 4=Proposal, 5=Client, 6=Lost)
+- `stage_name` TEXT
+- `tier`, `volume`, `sides`, `market`, `db_size`, `notes`
+- `opted_out_sms` BOOLEAN
+- `created_at`, `updated_at`
 
-| File | Purpose |
-|---|---|
-| `supabase/schema.sql` | Human-readable schema reference |
-| `supabase/migrations/20260514000000_initial_schema.sql` | Supabase-deployable migration (tables, views, RLS, triggers, seeded 3-step email sequence) |
-| `supabase/config.toml` | Project config — edge function JWT settings |
-| `supabase/functions/booking-create/index.ts` | Replaces Make.com webhook — logs lead + sends Resend confirmation email |
-| `supabase/functions/sms-reminder/index.ts` | pg_cron every 5min — Twilio SMS 1hr before confirmed calls |
-| `supabase/functions/stripe-webhook/index.ts` | Payment → create client record → send onboarding email with portal token |
-| `supabase/functions/email-sequence/index.ts` | Daily cron cold outbound engine, 3-step default sequence, {{name}}/{{market}} vars |
-| `booking.html` | Rerouted from Make.com to Supabase Edge Function |
-| `js/rfs-config.js` | Shared Supabase client config — project URL set, anon key still needed |
-| `SETUP.md` | Full 10-step deployment guide |
+**`bookings`** — confirmed Revenue Audit calls
+- `id`, `lead_id` (FK→leads)
+- `slot_time` TIMESTAMPTZ (NOT `scheduled_at`)
+- `duration_minutes` (default 30)
+- `status` (default 'confirmed')
+- `audit_notes`, `google_event_id`
+- `confirmation_sent`, `reminder_24h_sent`, `reminder_1h_sent` BOOLEAN
+- `created_at`, `updated_at`
 
-### Database Tables Created
-- `leads` — everyone who books or is contacted
-- `bookings` — confirmed Revenue Audit calls
-- `email_log` — all sent emails with Resend IDs
-- `sms_log` — all sent SMS with Twilio SIDs
-- `sequence_contacts` — cold outbound targets
-- `sequence_steps` — email templates (3 seeded)
-- `clients` — paid clients (auto-created on Stripe payment)
-- `payments` — Stripe payment records
-- Views: `pipeline_view`, `analytics_summary`
+**`emails`** — all sent emails (NOT `email_log`)
+- `id`, `lead_id`, `resend_id`
+- `subject`, `body_html`
+- `type` (default 'transactional')
+- `sequence_id` (FK→sequences), `sequence_step`
+- `sent_at`, `opened_at`, `clicked_at`, `bounced_at`, `error`
 
-### Existing Pages (untouched)
-- `index.html` — main landing page
-- `booking.html` — Revenue Audit booking form (now wired to Supabase)
-- `command-center.html` — internal CRM dashboard (still uses localStorage — needs Supabase upgrade)
-- `portal/index.html` — client onboarding portal (still static — needs Supabase auth)
-- `offer-comparison/index.html`
-- `terms/index.html`, `privacy/index.html`
+**`sms_messages`** — all sent/received SMS (NOT `sms_log`)
+- `id`, `lead_id`, `twilio_sid`
+- `direction` (default 'outbound'), `body`, `status`, `type`
+- `sent_at`, `error`
+
+**`sequences`** — email/SMS sequence definitions (3 seeded)
+- `id`, `name`, `trigger_stage` INTEGER, `active`
+
+**`sequence_steps`** — individual steps per sequence (5 seeded)
+- `id`, `sequence_id`, `step_number`
+- `delay_hours` (NOT delay_days)
+- `channel` ('email' or 'sms')
+- `subject`, `body_html`, `body_text`
+
+**`sequence_enrollments`** — tracks each lead's progress through a sequence
+- `id`, `lead_id`, `sequence_id`
+- `current_step` (0-indexed, starts at 0)
+- `next_send_at`, `started_at`, `completed_at`
+- `paused`, `cancelled` BOOLEAN
+
+**`clients`** — paid clients
+- `id`, `lead_id` (unique), `payment_id` (FK→payments)
+- `portal_token` (auto-generated hex, NOT `portal_access_token`)
+- `onboarding_stage` INTEGER, `onboarding_stage_name`
+- `intake_completed`, `setup_completed` BOOLEAN
+- `go_live_date`, `notes`
+
+**`payments`** — Stripe payment records
+- `id`, `lead_id`
+- `stripe_payment_intent_id` (unique), `stripe_customer_id`, `stripe_checkout_session_id` (unique)
+- `amount_cents`, `currency`, `status`, `tier`, `description`
+
+**`activity_log`** — timestamped event log per lead
+- `id`, `lead_id`, `type`, `description`, `metadata` JSONB
+
+**`daily_activity`** — manual daily tracking
+- `id`, `date` (unique)
+- `dms`, `follow_ups`, `replies`, `looms`, `calls`, `closes`, `revenue` (all INT)
+
+### Seeded Sequences
+| Sequence | Trigger Stage | Steps |
+|---|---|---|
+| Post-Booking Nurture | 2 (Booked) | Step 1: Email 1hr (confirmation) · Step 2: SMS 23hr (reminder) |
+| Post-Audit Follow-up | 3 (Audit Done) | Step 1: Email 48hr · Step 2: Email 96hr |
+| Proposal Follow-up | 4 (Proposal) | Step 1: Email 72hr |
+
+---
+
+## Stripe Products (7 created)
+- `prod_UGTKfcdo4ZbJGe` — RFS Revenue Leak Audit
+- `prod_U4Lw3U0HgaLyQN` — AI Voice Qualifier Add-On
+- `prod_U4LwFj5h2cOBje` — Lead Capture Protection Plan Tier 2
+- `prod_U4LwqATFLE75J0` — Lead Capture Protection Plan Tier 1
+- `prod_U4Lw74JRodCVvf` — Team Infrastructure Build Setup
+- `prod_U4Lv4qUywy4JGy` — Revenue Acceleration Build Setup
+- `prod_U4Lv9gBQA2VHcK` — Core Speed System Setup
+
+---
+
+## Edge Functions (written, NOT yet deployed)
+
+| Function | File | Status |
+|---|---|---|
+| `booking-create` | `supabase/functions/booking-create/index.ts` | Ready to deploy |
+| `sequence-runner` | `supabase/functions/sequence-runner/index.ts` | Ready to deploy |
+| `stripe-webhook` | `supabase/functions/stripe-webhook/index.ts` | Ready to deploy |
+
+Note: `sms-reminder` and `email-sequence` are **obsolete** — replaced by `sequence-runner`.
+
+---
+
+## RLS Policy Status
+- `leads`: ✅ `anon_insert_leads` policy applied live (May 17, 2026)
+- All other tables: service_role bypasses RLS (Edge Functions use service_role key)
+
+---
+
+## Key Config Details
+- `booking.html` sends to: `https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/booking-create`
+- Anon key still needed in `booking.html` and `js/rfs-config.js` (`YOUR_SUPABASE_ANON_KEY` placeholder)
+- `booking-create`: `verify_jwt = false` (public endpoint)
+- `stripe-webhook`: `verify_jwt = false` (Stripe calls directly)
+- `sequence-runner`: `verify_jwt = true` (cron-triggered with service_role key)
 
 ---
 
 ## Tomorrow's To-Do List
 
-### Immediate (required before anything goes live)
-- [ ] **Get Supabase anon key** — Dashboard → Settings → API → anon/public key
-- [ ] **Update `booking.html`** — replace `YOUR_SUPABASE_ANON_KEY`
-- [ ] **Update `js/rfs-config.js`** — replace `YOUR_SUPABASE_ANON_KEY`
-- [ ] **Deploy edge functions** via Supabase CLI:
+### Blocking Go-Live (do these first)
+- [ ] Get Supabase anon key → Dashboard → Settings → API → anon/public key
+- [ ] Replace `YOUR_SUPABASE_ANON_KEY` in `booking.html` and `js/rfs-config.js`
+- [ ] Deploy 3 edge functions:
   ```bash
   supabase link --project-ref wufmcymarbkrjzaqapuu
   supabase functions deploy booking-create
-  supabase functions deploy sms-reminder
+  supabase functions deploy sequence-runner
   supabase functions deploy stripe-webhook
-  supabase functions deploy email-sequence
   ```
-- [ ] **Add secrets** in Supabase Dashboard → Edge Functions → Manage Secrets:
+- [ ] Add secrets in Supabase Dashboard → Edge Functions → Manage Secrets:
   - `RESEND_API_KEY`
   - `TWILIO_ACCOUNT_SID`
   - `TWILIO_AUTH_TOKEN`
-  - `TWILIO_PHONE_NUMBER`
+  - `TWILIO_PHONE_NUMBER` (E.164 format, e.g. +16175551234)
   - `STRIPE_SECRET_KEY`
-  - `STRIPE_WEBHOOK_SECRET`
+  - `STRIPE_WEBHOOK_SECRET` (generated when adding webhook in Stripe)
 
 ### Setup & Verification
-- [ ] **Verify Resend domain** — resend.com → Domains → add realtyflow.xyz → add SPF/DKIM/DMARC to GoDaddy DNS
-- [ ] **Configure Stripe webhook** — point to `https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/stripe-webhook`, events: `checkout.session.completed` + `payment_intent.succeeded`
-- [ ] **Enable pg_cron + pg_net extensions** in Supabase → Database → Extensions
-- [ ] **Schedule SMS cron** — run the SQL from SETUP.md Step 7
-- [ ] **Schedule email sequence cron** — run the SQL from SETUP.md Step 8
-- [ ] **Test end-to-end** — submit booking.html form → confirm lead appears in Supabase `leads` table + confirmation email received
+- [ ] Verify Resend domain — resend.com → Domains → realtyflow.xyz → add DNS records to GoDaddy
+- [ ] Configure Stripe webhook → Developers → Webhooks → Add endpoint:
+  - URL: `https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/stripe-webhook`
+  - Event: `checkout.session.completed`
+- [ ] Enable pg_cron + pg_net in Supabase → Database → Extensions
+- [ ] Schedule sequence-runner cron (run in SQL Editor):
+  ```sql
+  select cron.schedule('sequence-runner', '*/30 * * * *',
+    $$select net.http_post(
+      url:='https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/sequence-runner',
+      headers:='{"Authorization":"Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
+    )$$
+  );
+  ```
+- [ ] Test end-to-end: submit booking form → check `leads` table in Supabase → confirm email received
 
-### Phase 4 Continued (next dev sessions)
-- [ ] **Upgrade command-center.html** — replace localStorage with Supabase real-time data (pipeline, analytics)
-- [ ] **Upgrade portal/index.html** — add Supabase auth token validation so portal is actually gated
-- [ ] **Add time slot picker to booking.html** — let prospects self-select from available windows
-- [ ] **Import first cold outreach contacts** — Supabase → Table Editor → sequence_contacts
+### Next Dev Work
+- [ ] Upgrade `command-center.html` — replace localStorage with Supabase real-time data
+- [ ] Gate `portal/index.html` — validate `portal_token` query param against `clients` table
+- [ ] Add time slot picker to `booking.html`
+- [ ] Create Stripe prices for existing products (products exist, prices needed for checkout)
 
 ---
 
-## Cost Summary (current)
-| Tool | Monthly |
+## Monthly Cost Summary
+| Tool | Cost |
 |---|---|
 | GitHub Pages | $0 |
 | Supabase (free tier) | $0 |
-| Resend (free tier) | $0 |
-| Twilio (per SMS ~$0.008) | ~$1–2 |
-| Stripe | 2.9% + 30¢ per transaction |
+| Resend (free tier, 3k/day) | $0 |
+| Twilio (~$0.008/SMS) | ~$1–2/mo |
+| Stripe | 2.9% + 30¢/transaction |
 | **Total fixed** | **~$1–2/mo** |
-
-Previously paying: Make.com + GoHighLevel = $110–$315/mo
