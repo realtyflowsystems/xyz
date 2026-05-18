@@ -1,6 +1,6 @@
 # RealtyFlow Systems — Session Memory
 
-_Last updated: May 18, 2026 (session 2)_
+_Last updated: May 18, 2026 (session 3)_
 
 ---
 
@@ -38,7 +38,7 @@ Self-owned stack replacing Make.com + GoHighLevel + Cal.com:
 | URL | File | Description |
 |---|---|---|
 | `/` | `index.html` | Main landing page |
-| `/booking` | `booking.html` | Revenue Audit booking form |
+| `/booking` | `booking/index.html` | Revenue Audit booking form (moved from flat booking.html) |
 | `/command-center` | `command-center.html` | Internal CRM dashboard (auth-gated) |
 | `/portal` | `portal/index.html` | Client portal (token-gated) |
 | `/offer-comparison` | `offer-comparison/index.html` | Offer comparison page |
@@ -151,6 +151,8 @@ Self-owned stack replacing Make.com + GoHighLevel + Cal.com:
 | `sequence-runner` | `supabase/functions/sequence-runner/index.ts` | on | Processes due email/SMS steps |
 | `stripe-webhook` | `supabase/functions/stripe-webhook/index.ts` | off | Handles `checkout.session.completed` |
 | `portal-data` | `supabase/functions/portal-data/index.ts` | off | Returns client data for portal |
+| `chat-send` | `supabase/functions/chat-send/index.ts` | off | POST: store visitor message + SMS Erics; GET: poll for new messages |
+| `chat-reply` | `supabase/functions/chat-reply/index.ts` | off | Twilio incoming SMS webhook — routes Erics's reply to visitor widget + email fallback |
 
 ### booking-create flow
 1. Validate name/email/phone → normalizePhone() to E.164
@@ -196,10 +198,12 @@ On `checkout.session.completed`:
 
 | Secret | Used by |
 |---|---|
-| `RESEND_API_KEY` | booking-create, sequence-runner, stripe-webhook |
-| `TWILIO_ACCOUNT_SID` | sequence-runner |
-| `TWILIO_AUTH_TOKEN` | sequence-runner |
+| `RESEND_API_KEY` | booking-create, sequence-runner, stripe-webhook, chat-reply |
+| `TWILIO_ACCOUNT_SID` | sequence-runner, chat-send |
+| `TWILIO_AUTH_TOKEN` | sequence-runner, chat-send |
 | `TWILIO_PHONE_NUMBER` | sequence-runner (E.164 format, "From" number) |
+| `TWILIO_PHONE` | chat-send (E.164 format — confirm this secret name matches) |
+| `ERICS_PHONE` | chat-send, chat-reply (Erics's personal cell in E.164) |
 | `STRIPE_WEBHOOK_SECRET` | stripe-webhook |
 | `SUPABASE_URL` | all (auto-injected) |
 | `SUPABASE_SERVICE_ROLE_KEY` | all (auto-injected) |
@@ -250,8 +254,11 @@ On `checkout.session.completed`:
 | File | Purpose |
 |---|---|
 | `js/rfs-config.js` | Shared Supabase URL + anon key, `RFS.client()` helper |
+| `js/chat-widget.js` | Self-contained live chat widget (no dependencies) |
 | `supabase/migrations/20260514000000_initial_schema.sql` | Full schema DDL |
 | `supabase/migrations/20260514000001_rls_policies.sql` | RLS policies |
+| `supabase/migrations/20260518000000_fix_pipeline_view_security_invoker.sql` | Fix pipeline_view SECURITY DEFINER → SECURITY INVOKER |
+| `supabase/migrations/20260518000001_create_chat_tables.sql` | chat_sessions + chat_messages tables |
 | `supabase/schema.sql` | Schema reference |
 | `supabase/config.toml` | Supabase project config |
 
@@ -290,12 +297,58 @@ On `checkout.session.completed`:
 
 ---
 
-## Booking Form (`/booking.html`)
+## Booking Form (`/booking`)
 
+- File moved to `booking/index.html` (was `booking.html` — flat file caused GitHub Pages 404 → redirect loop)
 - 5-day weekday slot picker with 6 ET time slots (9:00, 10:30, 12:00, 1:30, 3:00, 4:30)
+- Selected slot confirmed with gold display text (e.g. "✓ Thu May 22 at 10:30 AM ET")
 - "No preference" option → `slot_time` omitted from payload
 - Phone sent raw → `normalizePhone()` in backend handles E.164
 - Submits to `booking-create` edge function
+
+---
+
+## Chat Widget (`js/chat-widget.js`)
+
+Custom live chat replacing Zoho SalesIQ (subscription cancelled in ~2 weeks).
+
+**How it works:**
+- Floating gold bubble (bottom-right, z-index 9998), slide-out 360px panel
+- New visitor: shows intro card + name/email fields above message input
+- On first send: creates `chat_sessions` row, stores message, sends Erics SMS via Twilio
+- Auto-reply stored as agent message: "Hey [first name]! Got it — Erics will be with you in just a moment."
+- Widget polls `/chat-send?session_key=...` every 3s (panel open) or 15s (background) for new messages
+- Returning visitor: session_key + messages cached in localStorage (last 60 messages)
+- Unread badge on bubble when replies arrive while panel is closed
+
+**Erics's reply flow:**
+- Gets SMS: `💬 RFS Chat [A3F8C2] Sarah M: "message text"`
+- Texts back to same Twilio number → `chat-reply` Twilio webhook fires
+- Reply stored as agent message → visitor sees it within 3s
+- If visitor offline (last_seen_at > 3 min ago) and has email → email fallback via Resend
+
+**Twilio setup required:**
+- In Twilio console → phone number → Messaging → "A Message Comes In" webhook:
+  `https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/chat-reply` (HTTP POST)
+
+**Secrets needed (not yet confirmed set):**
+- `TWILIO_PHONE` — E.164 Twilio number for chat-send (may differ from `TWILIO_PHONE_NUMBER` used by sequence-runner)
+- `ERICS_PHONE` — Erics's personal cell in E.164 format
+
+**Widget on pages:** index.html, audit/, offer-comparison/, booking/, thank-you/, privacy/, terms/
+
+---
+
+## Database — Chat Tables
+
+**`chat_sessions`**
+- `id`, `session_key` (UUID, used by widget as identifier)
+- `visitor_name`, `visitor_email`, `status` ('open'/'closed')
+- `last_seen_at` (updated on every poll — used to detect offline visitors)
+- `last_message_at`, `created_at`
+
+**`chat_messages`**
+- `id`, `session_id` (FK→chat_sessions), `sender` ('visitor'/'agent'), `body`, `created_at`
 
 ---
 
@@ -312,14 +365,43 @@ On `checkout.session.completed`:
 
 ---
 
+## 10DLC Status — PENDING
+
+Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
+
+- Applied for brand registration with The Campaign Registry (TCR)
+- EIN verification failed online — faxed IRS twice, no response after 2 weeks
+- **Next step:** Call IRS Business & Specialty Tax Line **1-800-829-4933** (Mon–Fri 7am–7pm)
+  - Ask specifically for **147C letter** (EIN verification letter)
+  - Have ready: EIN, exact legal business name as filed, business address, authorized rep name
+- Once 147C received → resubmit brand registration → campaign approval 3–7 business days
+- Until approved: SMS may be filtered by carriers
+
+---
+
+## Future / Parked Ideas
+
+- **Client SMS sub-accounts** — provision each RFS client their own Twilio number under RFS master account; mark up messaging at ~$49/month (cost ~$19, margin ~$30). Real value: RFS handles 10DLC registration and compliance for clients. Revisit once RFS hits 10+ active clients.
+- **Telnyx migration** — ~50% cheaper than Twilio, own carrier network. Minimal code change. Worth evaluating at 50+ clients when volume pricing matters.
+- **Command-center chat tab** — add active chat sessions panel to command-center.html so Erics can reply from browser in addition to SMS.
+
+---
+
 ## What's Still Needed
 
+- [ ] **Twilio webhook configured** — set `chat-reply` URL in Twilio console (see Chat Widget section above)
+- [ ] **Secrets confirmed** — verify `TWILIO_PHONE` and `ERICS_PHONE` secrets are set in Supabase for chat functions
+- [ ] **10DLC** — call IRS for 147C letter, then complete TCR brand + campaign registration
 - [ ] **Retainer / add-on post-payment** — Protection Plan and AI Voice Qualifier links use Stripe's hosted confirmation (no `/thank-you` redirect); consider adding if desired
-- [ ] **Onboarding email copy** — `stripe-webhook` sends a portal-link email; confirm Resend template has final copy
 
 ## Completed ✅
 
+- ~~Custom live chat widget~~ — replaces Zoho SalesIQ; SMS bridge, email fallback, localStorage persistence, all 7 public pages
+- ~~pipeline_view security fix~~ — migration applied, SECURITY DEFINER → SECURITY INVOKER
+- ~~Booking link routing fix~~ — `booking.html` → `booking/index.html`; all CTAs use `/booking`
+- ~~Booking slot picker~~ — slot-selected-display element added, JS wired, "Your Information" step label
 - ~~Revenue Leak Audit page~~ — `/audit` built, payment link `plink_1TYO6aAM1e66iBUiZZBmrkIw` live, redirects to `/thank-you`
+- ~~Stripe webhook onboarding emails~~ — personalized copy for setup clients and audit purchasers (v6, ACTIVE)
 - ~~Sequence body copy~~ — all 5 steps written and live in DB
 - ~~Stripe payment links~~ — all 6 created with tier metadata
 - ~~Offer page CTAs~~ — all wired in `offer-comparison/index.html`
@@ -327,3 +409,5 @@ On `checkout.session.completed`:
 - ~~Thank-you page~~ — `/thank-you` built, all 3 setup links redirect there
 - ~~portal-data edge function~~ — deployed, token-gated, returns client data
 - ~~sms-reminder cron~~ — deleted (was broken/malformed)
+- ~~Theme consistency~~ — cursor, footer brand/subtitle/TCPA line applied across all pages
+- ~~Zoho SalesIQ removed~~ — snippet deleted from index.html
