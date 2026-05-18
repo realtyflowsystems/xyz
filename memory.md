@@ -45,6 +45,7 @@ Self-owned stack replacing Make.com + GoHighLevel + Cal.com:
 | `/privacy` | `privacy/index.html` | Privacy policy |
 | `/terms` | `terms/index.html` | Terms of service |
 | `/thank-you` | `thank-you/index.html` | Stripe post-payment success page |
+| `/audit` | `audit/index.html` | Revenue Leak Audit landing + checkout ($497) |
 | `/404` | `404.html` | 404 page |
 
 ---
@@ -229,11 +230,12 @@ On `checkout.session.completed`:
 | Core Speed System — Setup | `plink_1T7hG5AM1e66iBUiMk4ALOph` | `https://buy.stripe.com/...` | `tier=Core` | `/thank-you` ✅ |
 | Revenue Acceleration — Setup | `plink_1T85ERAM1e66iBUiTDF0RRS1` | `https://buy.stripe.com/...` | `tier=Revenue Acceleration` | `/thank-you` ✅ |
 | Team Infrastructure — Setup | `plink_1T85DuAM1e66iBUijyFzH9Uq` | `https://buy.stripe.com/...` | `tier=Team Infrastructure` | `/thank-you` ✅ |
+| Revenue Leak Audit | `plink_1TYO6aAM1e66iBUiZZBmrkIw` | `https://buy.stripe.com/5kQ14mdnwgqTdgsg1T4F207` | `type=audit` | `/thank-you` ✅ |
 | AI Voice Qualifier Add-On | `plink_...` | `https://buy.stripe.com/9B69ASfvE4Ibcco02V4F202` | `type=addon` | Stripe hosted ✅ |
 | Protection Plan — Tier 1 | `plink_...` | `https://buy.stripe.com/3cIeVcfvE0rVcco16Z4F203` | `tier=Core,type=retainer` | Stripe hosted ✅ |
 | Protection Plan — Tier 2 | `plink_...` | `https://buy.stripe.com/4gM5kC1EO1vZ1xKaHz4F201` | `tier=Revenue Acceleration,type=retainer` | Stripe hosted ✅ |
 
-> Setup payment links redirect to `https://realtyflow.xyz/thank-you` on success.
+> Setup and audit payment links redirect to `https://realtyflow.xyz/thank-you` on success.
 > stripe-webhook reads `session.metadata.tier` to route the payment record.
 
 ### Billing Portal
@@ -312,12 +314,12 @@ On `checkout.session.completed`:
 
 ## What's Still Needed
 
-- [ ] **Revenue Leak Audit page** — product (`prod_UGTKfcdo4ZbJGe`) and price (`price_1TY5fEAM1e66iBUidQYoGQpJ`, $497) exist; needs a Stripe payment link + dedicated landing page
 - [ ] **Retainer / add-on post-payment** — Protection Plan and AI Voice Qualifier links use Stripe's hosted confirmation (no `/thank-you` redirect); consider adding if desired
 - [ ] **Onboarding email copy** — `stripe-webhook` sends a portal-link email; confirm Resend template has final copy
 
 ## Completed ✅
 
+- ~~Revenue Leak Audit page~~ — `/audit` built, payment link `plink_1TYO6aAM1e66iBUiZZBmrkIw` live, redirects to `/thank-you`
 - ~~Sequence body copy~~ — all 5 steps written and live in DB
 - ~~Stripe payment links~~ — all 6 created with tier metadata
 - ~~Offer page CTAs~~ — all wired in `offer-comparison/index.html`
