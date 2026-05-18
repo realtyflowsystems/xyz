@@ -1,6 +1,6 @@
 # RealtyFlow Systems — Session Memory
 
-_Last updated: May 18, 2026_
+_Last updated: May 18, 2026 (session 2)_
 
 ---
 
@@ -44,6 +44,7 @@ Self-owned stack replacing Make.com + GoHighLevel + Cal.com:
 | `/offer-comparison` | `offer-comparison/index.html` | Offer comparison page |
 | `/privacy` | `privacy/index.html` | Privacy policy |
 | `/terms` | `terms/index.html` | Terms of service |
+| `/thank-you` | `thank-you/index.html` | Stripe post-payment success page |
 | `/404` | `404.html` | 404 page |
 
 ---
@@ -119,7 +120,17 @@ Self-owned stack replacing Make.com + GoHighLevel + Cal.com:
 | Post-Audit Follow-up | 3 (Audit Done) | Step 1: Email @ 48hr · Step 2: Email @ 96hr |
 | Proposal Follow-up | 4 (Proposal) | Step 1: Email @ 72hr |
 
-> **Note:** Step body copy (`body_text` / `body_html`) still needs to be written into `sequence_steps`.
+> **All step body copy written and live in DB** — `{{fname}}` template variable resolved by `personalize()` in sequence-runner.
+
+#### Step Copy Summary
+
+| Sequence | Step | Channel | Delay | Subject / Content |
+|---|---|---|---|---|
+| Post-Booking Nurture | 1 | Email | 1hr | "Your Revenue Audit is confirmed" — slot confirmation + what to expect |
+| Post-Booking Nurture | 2 | SMS | 23hr | "Hey {{fname}}, just a heads up — your Revenue Audit with Erics is coming up soon…" + STOP opt-out |
+| Post-Audit Follow-up | 1 | Email | 48hr | "What your audit revealed, {{fname}}" — $30K–$90K missed revenue callout |
+| Post-Audit Follow-up | 2 | Email | 96hr | "Still thinking it over, {{fname}}?" — scarcity framing, open slot urgency |
+| Proposal Follow-up | 1 | Email | 72hr | "Checking in on your proposal, {{fname}}" — direct follow-up |
 
 ### RLS Policies (all applied)
 
@@ -211,6 +222,27 @@ On `checkout.session.completed`:
 
 ---
 
+## Stripe Payment Links (all live)
+
+| Product | Payment Link ID | URL | Metadata | Redirect |
+|---|---|---|---|---|
+| Core Speed System — Setup | `plink_1T7hG5AM1e66iBUiMk4ALOph` | `https://buy.stripe.com/...` | `tier=Core` | `/thank-you` ✅ |
+| Revenue Acceleration — Setup | `plink_1T85ERAM1e66iBUiTDF0RRS1` | `https://buy.stripe.com/...` | `tier=Revenue Acceleration` | `/thank-you` ✅ |
+| Team Infrastructure — Setup | `plink_1T85DuAM1e66iBUijyFzH9Uq` | `https://buy.stripe.com/...` | `tier=Team Infrastructure` | `/thank-you` ✅ |
+| AI Voice Qualifier Add-On | `plink_...` | `https://buy.stripe.com/9B69ASfvE4Ibcco02V4F202` | `type=addon` | Stripe hosted ✅ |
+| Protection Plan — Tier 1 | `plink_...` | `https://buy.stripe.com/3cIeVcfvE0rVcco16Z4F203` | `tier=Core,type=retainer` | Stripe hosted ✅ |
+| Protection Plan — Tier 2 | `plink_...` | `https://buy.stripe.com/4gM5kC1EO1vZ1xKaHz4F201` | `tier=Revenue Acceleration,type=retainer` | Stripe hosted ✅ |
+
+> Setup payment links redirect to `https://realtyflow.xyz/thank-you` on success.
+> stripe-webhook reads `session.metadata.tier` to route the payment record.
+
+### Billing Portal
+
+- URL: `https://billing.stripe.com/p/login/9B67sK5V47Unb8k6rj4F200`
+- Linked in `/portal/index.html` — "Manage Billing" button
+
+---
+
 ## Key Files
 
 | File | Purpose |
@@ -280,6 +312,16 @@ On `checkout.session.completed`:
 
 ## What's Still Needed
 
-- [ ] **Sequence body copy** — write actual SMS/email content into `sequence_steps.body_text` / `body_html` for all 5 steps
-- [ ] **Stripe Checkout links** — create checkout sessions using the price IDs above and wire CTAs on offer pages
-- [ ] **Offer page CTAs** — connect booking and checkout buttons on the main site
+- [ ] **Revenue Leak Audit page** — product (`prod_UGTKfcdo4ZbJGe`) and price (`price_1TY5fEAM1e66iBUidQYoGQpJ`, $497) exist; needs a Stripe payment link + dedicated landing page
+- [ ] **Retainer / add-on post-payment** — Protection Plan and AI Voice Qualifier links use Stripe's hosted confirmation (no `/thank-you` redirect); consider adding if desired
+- [ ] **Onboarding email copy** — `stripe-webhook` sends a portal-link email; confirm Resend template has final copy
+
+## Completed ✅
+
+- ~~Sequence body copy~~ — all 5 steps written and live in DB
+- ~~Stripe payment links~~ — all 6 created with tier metadata
+- ~~Offer page CTAs~~ — all wired in `offer-comparison/index.html`
+- ~~Homepage link fixes~~ — `.html` extensions → clean paths; dead Cal.com link → `/offer-comparison`
+- ~~Thank-you page~~ — `/thank-you` built, all 3 setup links redirect there
+- ~~portal-data edge function~~ — deployed, token-gated, returns client data
+- ~~sms-reminder cron~~ — deleted (was broken/malformed)
