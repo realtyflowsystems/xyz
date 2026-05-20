@@ -455,7 +455,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
     <table class="clients-table">
       <thead>
         <tr>
-          <th>Name</th><th>Phone</th><th>Email</th><th>Tier</th><th>Setup Fee</th><th>Status</th><th>Go-Live</th><th>Notes</th>
+          <th>Name</th><th>Phone</th><th>Email</th><th>Tier</th><th>Setup Fee</th><th>Status</th><th>Stage</th><th>Go-Live</th><th>Notes</th>
         </tr>
       </thead>
       <tbody id="clientsBody"></tbody>
@@ -832,7 +832,7 @@ async function loadLeads() {
 
 async function loadClients() {
   const { data, error } = await sb.from('clients')
-    .select('*, leads(fname,lname,email,phone,tier), payments(amount_cents,tier,description)')
+    .select('*, onboarding_stage, onboarding_stage_name, leads(fname,lname,email,phone,tier), payments(amount_cents,tier,description)')
     .order('created_at',{ascending:false});
   if (error) { console.error('loadClients:', error); return; }
   clients = data || [];
