@@ -325,6 +325,15 @@ function auditEmail(fname: string, portalToken: string): string {
 </td></tr>
 
 <tr><td style="padding:0 40px 32px;border-top:1px solid rgba(255,255,255,.06);">
+  <a href="https://realtyflow.xyz/intake?token=${portalToken}"
+     style="display:inline-block;padding:14px 28px;background:#C9A84C;color:#0A0A0A;
+            font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+            text-decoration:none;font-family:Arial,sans-serif;margin-bottom:16px;">
+    COMPLETE YOUR INTAKE FORM &rarr;
+  </a>
+  <p style="margin:8px 0 0;font-size:11px;color:#555;font-family:Arial,sans-serif;">
+    Takes 5–7 minutes. Your audit starts as soon as we receive it.
+  </p>
   <p style="margin:24px 0 6px;font-size:13px;color:#AAAAAA;line-height:1.7;font-family:Arial,sans-serif;">
     Watch for the intake form — it'll come from the same address. Reply here if you have questions in the meantime.
   </p>

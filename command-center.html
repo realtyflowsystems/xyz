@@ -455,7 +455,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
     <table class="clients-table">
       <thead>
         <tr>
-          <th>Name</th><th>Phone</th><th>Email</th><th>Tier</th><th>Setup Fee</th><th>Status</th><th>Go-Live</th><th>Notes</th>
+          <th>Name</th><th>Phone</th><th>Email</th><th>Tier</th><th>Setup Fee</th><th>Status</th><th>Stage</th><th>Go-Live</th><th>Notes</th>
         </tr>
       </thead>
       <tbody id="clientsBody"></tbody>
@@ -832,7 +832,7 @@ async function loadLeads() {
 
 async function loadClients() {
   const { data, error } = await sb.from('clients')
-    .select('*, leads(fname,lname,email,phone,tier), payments(amount_cents,tier,description)')
+    .select('*, onboarding_stage, onboarding_stage_name, leads(fname,lname,email,phone,tier), payments(amount_cents,tier,description)')
     .order('created_at',{ascending:false});
   if (error) { console.error('loadClients:', error); return; }
   clients = data || [];
@@ -1123,6 +1123,20 @@ async function saveClient(){
   ['cf-name','cf-email','cf-phone','cf-setup','cf-notes'].forEach(id=>document.getElementById(id).value='');
 }
 
+const ONBOARDING_STAGES = [
+  { label: '0 — Welcome',          dot: 'gray'  },
+  { label: '1 — Kickoff Complete',  dot: 'gray'  },
+  { label: '2 — Build Started',     dot: 'gray'  },
+  { label: '3 — Live Setup',        dot: 'gold'  },
+  { label: '4 — Review',            dot: 'gold'  },
+  { label: '5 — Live',              dot: 'green' },
+];
+const STAGE_DOT_STYLE = {
+  gray:  'display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px;flex-shrink:0;',
+  gold:  'display:inline-block;width:8px;height:8px;border-radius:50%;background:#C9A84C;box-shadow:0 0 6px rgba(201,168,76,.5);margin-right:6px;flex-shrink:0;',
+  green: 'display:inline-block;width:8px;height:8px;border-radius:50%;background:#3ECF8E;box-shadow:0 0 6px rgba(62,207,142,.5);margin-right:6px;flex-shrink:0;',
+};
+
 function renderClients(){
   const body=document.getElementById('clientsBody'), empty=document.getElementById('clientsEmpty');
   if(!clients.length){body.innerHTML='';empty.style.display='block';return;}
@@ -1132,6 +1146,10 @@ function renderClients(){
     const name=((l.fname||'')+(l.lname?' '+l.lname:'')).trim()||'—';
     const amt=p.amount_cents?'$'+(p.amount_cents/100).toLocaleString():'—';
     const tier=l.tier||p.tier||'—';
+    const stageNum=typeof c.onboarding_stage==='number'?c.onboarding_stage:0;
+    const stageMeta=ONBOARDING_STAGES[stageNum]||ONBOARDING_STAGES[0];
+    const dotStyle=STAGE_DOT_STYLE[stageMeta.dot];
+    const stageOpts=ONBOARDING_STAGES.map((s,i)=>`<option value="${i}"${i===stageNum?' selected':''}>${s.label}</option>`).join('');
     return `<tr>
       <td><div class="client-name">${name}</div></td>
       <td>${l.phone||'—'}</td>
@@ -1139,10 +1157,45 @@ function renderClients(){
       <td><div class="card-tier" style="display:inline-block;">${tier}</div></td>
       <td style="color:var(--green);font-family:'Cormorant Garamond',serif;font-size:16px;">${amt}</td>
       <td><span class="status-badge status-active">Active</span></td>
+      <td style="min-width:180px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span style="${dotStyle}"></span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--gray-l);letter-spacing:.05em;">${c.onboarding_stage_name||stageMeta.label.split('— ')[1]||'Welcome'}</span>
+        </div>
+        <select onchange="updateClientStage('${c.id}',this)" style="background:var(--dark3);border:1px solid rgba(201,168,76,.2);color:var(--gray-l);font-size:9px;font-family:'DM Mono',monospace;padding:4px 6px;cursor:pointer;width:100%;max-width:170px;">${stageOpts}</select>
+      </td>
       <td style="font-family:'DM Mono',monospace;font-size:10px;">${c.go_live_date||'—'}</td>
       <td style="max-width:180px;font-size:11px;color:var(--gray);">${c.notes||'—'}</td>
     </tr>`;
   }).join('');
+}
+
+async function updateClientStage(clientId, selectEl) {
+  const stage = parseInt(selectEl.value, 10);
+  selectEl.disabled = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token || SB_KEY;
+    const res = await fetch(`${SB_URL}/functions/v1/onboarding-update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': SB_KEY,
+      },
+      body: JSON.stringify({ client_id: clientId, stage }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast('Error: ' + (data.error || res.statusText)); selectEl.disabled = false; return; }
+    // Update local state
+    const c = clients.find(x => x.id === clientId);
+    if (c) { c.onboarding_stage = data.stage; c.onboarding_stage_name = data.stage_name; }
+    toast('Stage updated → ' + data.stage_name);
+    renderClients();
+  } catch(e) {
+    toast('Error updating stage');
+    selectEl.disabled = false;
+  }
 }
 
 // ── REVENUE ───────────────────────────────────────────────────────────────────
