@@ -45,10 +45,14 @@ create table if not exists agents (
 );
 
 -- Add FK from teams → agents (deferred so both can be inserted together)
-alter table teams add constraint if not exists fk_teams_primary_agent
-  foreign key (primary_agent_id) references agents(id)
-  on delete set null
-  deferrable initially deferred;
+-- ADD CONSTRAINT IF NOT EXISTS is not valid PostgreSQL syntax; use a DO block.
+do $$ begin
+  alter table teams add constraint fk_teams_primary_agent
+    foreign key (primary_agent_id) references agents(id)
+    on delete set null
+    deferrable initially deferred;
+exception when duplicate_object then null;
+end $$;
 
 -- ── OUTREACH LOG ───────────────────────────────────────────────────────────────
 create table if not exists outreach_log (
