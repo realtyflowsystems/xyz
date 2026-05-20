@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Revenue Leak Audit — Intake Form | RealtyFlow Systems</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<link rel="shortcut icon" href="/favicon.svg"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--dark:#0A0A0A;--dark2:#111111;--dark3:#1A1A1A;--gold:#C9A84C;--gold-l:#E8C97A;--white:#FFFFFF;--gray:#AAAAAA;--gray-l:#E0E0E0;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;font-weight:300;min-height:100vh;display:flex;flex-direction:column;cursor:none;}
+.rf-cursor{position:fixed;top:0;left:0;z-index:9999;pointer-events:none;}
+.rf-cursor-dot{width:6px;height:6px;background:var(--gold);border-radius:50%;transform:translate(-50%,-50%);position:absolute;}
+.rf-cursor-ring{width:36px;height:36px;border:1px solid rgba(201,168,76,.4);border-radius:50%;transform:translate(-50%,-50%);transition:width .3s,height .3s;position:absolute;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 60px;background:rgba(10,10,10,.97);border-bottom:1px solid rgba(201,168,76,.12);backdrop-filter:blur(12px);}
+.nav-logo{font-family:"Cormorant Garamond",serif;font-size:20px;font-weight:600;color:var(--gold);letter-spacing:.08em;text-decoration:none;cursor:none;}
+.nav-logo span{color:var(--gray);font-weight:300;font-size:11px;display:block;letter-spacing:.2em;margin-top:-3px;font-family:"DM Sans",sans-serif;}
+main{flex:1;padding:120px 60px 80px;background:radial-gradient(ellipse 70% 60% at 50% 40%,rgba(201,168,76,.05) 0%,transparent 70%);}
+.hero{max-width:680px;margin:0 auto 48px;}
+.hero-eyebrow{font-family:"DM Mono",monospace;font-size:10px;color:var(--gold);letter-spacing:.3em;text-transform:uppercase;margin-bottom:20px;}
+.hero h1{font-family:"Cormorant Garamond",serif;font-size:52px;font-weight:300;line-height:1.1;margin-bottom:16px;}
+.hero h1 em{font-style:italic;color:var(--gold);}
+.hero-sub{font-size:15px;color:var(--gray-l);line-height:1.8;}
+.form-card{max-width:680px;margin:0 auto;background:var(--dark2);border:1px solid rgba(255,255,255,.06);padding:40px;}
+.form-section{margin-bottom:0;}
+.section-title{font-family:"DM Mono",monospace;font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin-bottom:28px;}
+.divider{border:none;border-top:1px dotted rgba(201,168,76,.3);margin:32px 0;}
+.field{margin-bottom:24px;}
+.field:last-child{margin-bottom:0;}
+.field label{display:block;font-family:"DM Mono",monospace;font-size:10px;color:var(--gray);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px;}
+.field label .req{color:var(--gold);margin-left:3px;}
+.field input[type=text],
+.field input[type=email],
+.field input[type=tel],
+.field input[type=number],
+.field select,
+.field textarea{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.1);color:var(--white);font-family:"DM Sans",sans-serif;font-size:14px;font-weight:300;padding:12px 16px;outline:none;transition:border-color .2s;appearance:none;-webkit-appearance:none;cursor:none;}
+.field input[type=text]:focus,
+.field input[type=email]:focus,
+.field input[type=tel]:focus,
+.field input[type=number]:focus,
+.field select:focus,
+.field textarea:focus{border-color:rgba(201,168,76,.5);}
+.field input::placeholder,
+.field textarea::placeholder{color:rgba(170,170,170,.5);}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C9A84C' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px;}
+.field select option{background:var(--dark3);}
+.field textarea{resize:vertical;min-height:80px;line-height:1.7;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.checkboxes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:2px;}
+.checkbox-item{display:flex;align-items:center;gap:10px;cursor:none;}
+.checkbox-item input[type=checkbox]{width:16px;height:16px;background:var(--dark3);border:1px solid rgba(255,255,255,.15);appearance:none;-webkit-appearance:none;cursor:none;flex-shrink:0;position:relative;}
+.checkbox-item input[type=checkbox]:checked{background:var(--gold);border-color:var(--gold);}
+.checkbox-item input[type=checkbox]:checked::after{content:'';position:absolute;top:2px;left:5px;width:4px;height:8px;border:2px solid var(--dark);border-top:none;border-left:none;transform:rotate(45deg);}
+.checkbox-item span{font-size:13px;color:var(--gray-l);font-weight:300;}
+.submit-btn{width:100%;padding:16px 24px;background:var(--gold);color:var(--dark);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;border:none;cursor:none;margin-top:36px;transition:opacity .2s;}
+.submit-btn:disabled{opacity:.6;}
+.success-state{display:none;text-align:center;padding:60px 40px;}
+.success-icon{width:72px;height:72px;border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--gold);margin:0 auto 32px;}
+.success-state h2{font-family:"Cormorant Garamond",serif;font-size:32px;font-weight:300;margin-bottom:16px;}
+.success-state p{font-size:14px;color:var(--gray-l);line-height:1.8;max-width:420px;margin:0 auto;}
+.success-state p strong{color:var(--gold);}
+.error-box{display:none;border:1px solid rgba(201,168,76,.4);padding:14px 18px;margin-top:20px;}
+.error-box p{font-size:13px;color:var(--gold-l);line-height:1.6;}
+footer{padding:28px 60px;background:var(--dark2);border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.footer-brand{font-family:"Cormorant Garamond",serif;font-size:15px;font-weight:600;color:var(--gold);}
+.footer-brand span{display:block;font-size:10px;color:var(--gray);font-family:"DM Sans",sans-serif;letter-spacing:.15em;margin-top:3px;}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{font-size:11px;color:var(--gray);text-decoration:none;cursor:none;transition:color .3s;}
+.footer-links a:hover{color:var(--gold-l);}
+.footer-copy{font-size:11px;color:rgba(255,255,255,.3);line-height:1.6;}
+@media(max-width:768px){
+  nav{padding:16px 24px;}
+  main{padding:100px 24px 60px;}
+  .hero h1{font-size:36px;}
+  .field-row{grid-template-columns:1fr;}
+  .checkboxes{grid-template-columns:repeat(2,1fr);}
+  footer{padding:24px;flex-direction:column;}
+  body{cursor:auto;}
+  .rf-cursor{display:none;}
+  .field input[type=text],
+  .field input[type=email],
+  .field input[type=tel],
+  .field input[type=number],
+  .field select,
+  .field textarea,
+  .submit-btn,
+  .checkbox-item{cursor:auto;}
+}
+</style>
+</head>
+<body>
+<div class="rf-cursor"><div class="rf-cursor-ring" id="rfRing"></div><div class="rf-cursor-dot" id="rfDot"></div></div>
+
+<nav>
+  <a href="/" class="nav-logo">RealtyFlow<span>SYSTEMS</span></a>
+</nav>
+
+<main>
+  <div class="hero">
+    <div class="hero-eyebrow">Revenue Leak Audit</div>
+    <h1>Tell us about<br><em>your business.</em></h1>
+    <p class="hero-sub">This takes 5–7 minutes. Your answers are what the audit is built from — the more specific you are, the more precise your results.</p>
+  </div>
+
+  <div class="form-card" id="formCard">
+    <div id="formWrap">
+      <form id="intakeForm" novalidate>
+
+        <!-- Section 1 — Your Business -->
+        <div class="form-section">
+          <div class="section-title">Your Business</div>
+          <div class="field-row">
+            <div class="field">
+              <label>Full Name<span class="req">*</span></label>
+              <input type="text" id="name" name="name" required placeholder="Jane Smith"/>
+            </div>
+            <div class="field">
+              <label>Email<span class="req">*</span></label>
+              <input type="email" id="email" name="email" required placeholder="jane@brokerage.com"/>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Phone</label>
+              <input type="tel" id="phone" name="phone" placeholder="(617) 555-0100"/>
+            </div>
+            <div class="field">
+              <label>Market / City</label>
+              <input type="text" id="market" name="market" placeholder="e.g. Greater Boston, Newton, Cambridge"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Brokerage</label>
+            <input type="text" id="brokerage" name="brokerage" placeholder="e.g. Compass, Coldwell Banker, RE/MAX"/>
+          </div>
+        </div>
+
+        <hr class="divider"/>
+
+        <!-- Section 2 — Lead Volume -->
+        <div class="form-section">
+          <div class="section-title">Lead Volume</div>
+          <div class="field-row">
+            <div class="field">
+              <label>Monthly Lead Volume</label>
+              <input type="number" id="monthly_leads" name="monthly_leads" placeholder="e.g. 45" min="0"/>
+            </div>
+            <div class="field">
+              <label>Average Response Time to New Leads</label>
+              <select id="response_time" name="response_time">
+                <option value="">Select…</option>
+                <option value="under_5min">Under 5 min</option>
+                <option value="5_30min">5–30 min</option>
+                <option value="30_60min">30–60 min</option>
+                <option value="1_4hrs">1–4 hrs</option>
+                <option value="over_4hrs">Over 4 hrs</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Lead Sources (select all that apply)</label>
+            <div class="checkboxes">
+              <label class="checkbox-item"><input type="checkbox" name="lead_sources" value="Zillow"/><span>Zillow</span></label>
+              <label class="checkbox-item"><input type="checkbox" name="lead_sources" value="Realtor.com"/><span>Realtor.com</span></label>
+              <label class="checkbox-item"><input type="checkbox" name="lead_sources" value="Referrals"/><span>Referrals</span></label>
+              <label class="checkbox-item"><input type="checkbox" name="lead_sources" value="Social Media"/><span>Social Media</span></label>
+              <label class="checkbox-item"><input type="checkbox" name="lead_sources" value="Open Houses"/><span>Open Houses</span></label>
+              <label class="checkbox-item"><input type="checkbox" name="lead_sources" value="Other"/><span>Other</span></label>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider"/>
+
+        <!-- Section 3 — Closings & Pipeline -->
+        <div class="form-section">
+          <div class="section-title">Closings &amp; Pipeline</div>
+          <div class="field-row">
+            <div class="field">
+              <label>Closings in the Last 90 Days</label>
+              <input type="number" id="closings_90d" name="closings_90d" placeholder="e.g. 4" min="0"/>
+            </div>
+            <div class="field">
+              <label>Average Commission Per Closing ($)</label>
+              <input type="number" id="avg_commission" name="avg_commission" placeholder="e.g. 12000" min="0"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Current CRM or Follow-Up Tool</label>
+            <input type="text" id="current_crm" name="current_crm" placeholder="e.g. Follow Up Boss, kvCORE, spreadsheet, none"/>
+          </div>
+        </div>
+
+        <hr class="divider"/>
+
+        <!-- Section 4 — The Gaps -->
+        <div class="form-section">
+          <div class="section-title">The Gaps</div>
+          <div class="field">
+            <label>What happens when a new lead comes in after 9pm?</label>
+            <textarea id="after_hours_flow" name="after_hours_flow" rows="3" placeholder="Describe your current process — or lack of one. Be honest."></textarea>
+          </div>
+          <div class="field">
+            <label>What's your current follow-up sequence for cold leads?</label>
+            <textarea id="cold_follow_up" name="cold_follow_up" rows="3" placeholder="How often do you reach out? What do you say? When do you stop?"></textarea>
+          </div>
+          <div class="field">
+            <label>What's your biggest challenge right now?</label>
+            <textarea id="biggest_challenge" name="biggest_challenge" rows="3" placeholder="Be as specific as possible — this shapes the entire audit."></textarea>
+          </div>
+        </div>
+
+        <div class="error-box" id="errorBox"><p id="errorMsg">Something went wrong. Please try again.</p></div>
+        <button type="submit" class="submit-btn" id="submitBtn">Submit My Intake &rarr;</button>
+
+      </form>
+    </div>
+
+    <div class="success-state" id="successState">
+      <div class="success-icon">&#10003;</div>
+      <h2>Got it.</h2>
+      <p>Erics will review your intake and deliver your audit within 48 hours. Watch for an email from <strong>erics@realtyflow.xyz</strong>.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-brand">RealtyFlow Systems<span>Greater Boston Revenue Infrastructure</span></div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/offer-comparison">Offer Comparison</a>
+    <a href="/booking">Book Audit</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+    <a href="mailto:erics@realtyflow.xyz">Contact</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 RealtyFlow Systems &middot; 820 Massachusetts Ave, Cambridge, MA 02139 &middot; (617) 702-2742<br/>SMS opt-out: Reply STOP at any time &bull; MA TCPA Compliant</div>
+</footer>
+
+<script>
+(function(){
+  var dot=document.getElementById('rfDot'),ring=document.getElementById('rfRing'),mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
+  (function a(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a);})();
+  document.querySelectorAll('a,button,input,select,textarea,.checkbox-item').forEach(function(el){
+    el.addEventListener('mouseenter',function(){ring.style.width='52px';ring.style.height='52px';});
+    el.addEventListener('mouseleave',function(){ring.style.width='36px';ring.style.height='36px';});
+  });
+})();
+</script>
+
+<script>
+(function(){
+  var ENDPOINT = 'https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/intake-submit';
+
+  // Pre-fill email from URL params
+  var params = new URLSearchParams(window.location.search);
+  var token  = params.get('token') || '';
+  var emailParam = params.get('email') || '';
+  if (emailParam) {
+    var emailField = document.getElementById('email');
+    if (emailField) emailField.value = decodeURIComponent(emailParam);
+  }
+
+  var form      = document.getElementById('intakeForm');
+  var submitBtn = document.getElementById('submitBtn');
+  var errorBox  = document.getElementById('errorBox');
+  var errorMsg  = document.getElementById('errorMsg');
+  var formWrap  = document.getElementById('formWrap');
+  var successEl = document.getElementById('successState');
+
+  function showError(msg) {
+    errorMsg.textContent = msg || 'Something went wrong. Please try again.';
+    errorBox.style.display = 'block';
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideError() {
+    errorBox.style.display = 'none';
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    hideError();
+
+    var name  = document.getElementById('name').value.trim();
+    var email = document.getElementById('email').value.trim();
+
+    if (!name) { showError('Full name is required.'); return; }
+    if (!email) { showError('Email address is required.'); return; }
+
+    // Collect checked lead sources
+    var sources = [];
+    document.querySelectorAll('input[name="lead_sources"]:checked').forEach(function(cb){
+      sources.push(cb.value);
+    });
+
+    var payload = {
+      token:             token,
+      name:              name,
+      email:             email,
+      phone:             document.getElementById('phone').value.trim(),
+      market:            document.getElementById('market').value.trim(),
+      brokerage:         document.getElementById('brokerage').value.trim(),
+      monthly_leads:     document.getElementById('monthly_leads').value ? parseInt(document.getElementById('monthly_leads').value, 10) : null,
+      lead_sources:      sources,
+      response_time:     document.getElementById('response_time').value,
+      closings_90d:      document.getElementById('closings_90d').value ? parseInt(document.getElementById('closings_90d').value, 10) : null,
+      avg_commission:    document.getElementById('avg_commission').value ? parseInt(document.getElementById('avg_commission').value, 10) : null,
+      current_crm:       document.getElementById('current_crm').value.trim(),
+      after_hours_flow:  document.getElementById('after_hours_flow').value.trim(),
+      cold_follow_up:    document.getElementById('cold_follow_up').value.trim(),
+      biggest_challenge: document.getElementById('biggest_challenge').value.trim(),
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    fetch(ENDPOINT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      if (result.ok && result.data.success) {
+        formWrap.style.display = 'none';
+        successEl.style.display = 'block';
+      } else {
+        var msg = (result.data && result.data.error) ? result.data.error : 'Something went wrong. Please try again.';
+        showError(msg);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit My Intake →';
+      }
+    })
+    .catch(function() {
+      showError('Network error — please check your connection and try again.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit My Intake →';
+    });
+  });
+})();
+</script>
+
+<script src="/js/chat-widget.js" defer></script>
+</body>
+</html>
