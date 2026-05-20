@@ -1,3 +1,23 @@
+// Redirect any leftover GoHighLevel booking links to /booking
+(function () {
+  var GHL = 'leadconnectorhq.com';
+  function fixGHLLinks() {
+    [].forEach.call(document.querySelectorAll('a'), function (a) {
+      if (a.href && a.href.indexOf(GHL) !== -1) a.href = '/booking';
+    });
+  }
+  document.addEventListener('DOMContentLoaded', fixGHLLinks);
+  if (document.readyState !== 'loading') fixGHLLinks();
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el.tagName !== 'A') el = el.parentNode;
+    if (el && el.href && el.href.indexOf(GHL) !== -1) {
+      e.preventDefault();
+      window.location.href = '/booking';
+    }
+  }, true);
+})();
+
 (function () {
   'use strict';
 
