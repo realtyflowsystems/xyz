@@ -179,6 +179,52 @@ html,body{background:#0A0A0A!important;color:#FFFFFF;font-family:'DM Sans',sans-
   .rf-stats{flex-direction:column;}.rf-stat{width:100%;}
 }
 
+/* ===== ROI CALCULATOR ===== */
+.rf-calc{padding:120px 60px;background:var(--dark3);}
+.rf-calc-hdr{text-align:center;margin-bottom:64px;}
+.rf-calc-eyebrow{font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.3em;text-transform:uppercase;margin-bottom:20px;display:block;}
+.rf-calc-hl{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,4vw,48px);font-weight:300;line-height:1.15;color:#fff;margin-bottom:16px;}
+.rf-calc-hl em{font-style:italic;color:var(--gold);}
+.rf-calc-sub{font-size:15px;color:var(--gray-l);line-height:1.7;}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1000px;margin:0 auto;}
+.calc-inputs{background:var(--dark2);border:1px solid rgba(255,255,255,.06);padding:32px;}
+.calc-inputs label{display:block;font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px;}
+.calc-input-group{margin-bottom:32px;}
+.calc-input-group:last-child{margin-bottom:0;}
+.calc-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#fff;margin-bottom:10px;display:block;}
+.calc-inputs input[type=range]{width:100%;accent-color:var(--gold);cursor:none;display:block;}
+.calc-inputs select{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.1);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 16px;appearance:none;cursor:none;outline:none;transition:border-color .3s;}
+.calc-inputs select:focus{border-color:var(--gold);}
+.calc-results{background:var(--dark3);border:1px solid rgba(201,168,76,.15);padding:36px;display:flex;flex-direction:column;justify-content:space-between;}
+.calc-stat{margin-bottom:28px;}
+.calc-stat-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:.3em;text-transform:uppercase;margin-bottom:8px;display:block;}
+.calc-stat-label.calc-stat-leak{color:#D4614A;}
+.calc-stat-value{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:#fff;line-height:1;}
+.calc-divider{height:1px;background:rgba(201,168,76,.15);margin:24px 0;}
+.calc-footnote{font-size:13px;color:var(--gray);line-height:1.7;margin-bottom:24px;}
+.calc-cta{display:inline-flex;align-items:center;gap:10px;padding:16px 36px;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;cursor:none;transition:background .3s,color .3s;width:100%;justify-content:center;}
+.calc-cta:hover{background:var(--gold);color:var(--dark);}
+@media(max-width:768px){
+  .rf-calc{padding:80px 24px;}
+  .calc-grid{grid-template-columns:1fr;}
+}
+
+/* ===== EXIT INTENT MODAL ===== */
+#exitModal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:none;align-items:center;justify-content:center;}
+.exit-card{max-width:480px;width:90%;background:var(--dark2);border:1px solid rgba(201,168,76,.2);padding:48px 40px;position:relative;}
+.exit-close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--gold);font-size:20px;line-height:1;cursor:none;padding:4px 8px;}
+.exit-eyebrow{font-family:'DM Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:.3em;text-transform:uppercase;display:block;margin-bottom:16px;}
+.exit-hl{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;line-height:1.2;color:#fff;margin-bottom:16px;}
+.exit-hl em{font-style:italic;color:var(--gold);}
+.exit-sub{font-size:13px;color:var(--gray-l);line-height:1.75;margin-bottom:28px;}
+.exit-email{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.1);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;padding:14px 18px;outline:none;transition:border-color .3s;display:block;margin-bottom:12px;}
+.exit-email:focus{border-color:var(--gold);}
+.exit-submit{width:100%;background:var(--gold);color:var(--dark);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;padding:16px;border:none;cursor:none;transition:opacity .3s;}
+.exit-submit:hover{opacity:.9;}
+.exit-success{display:none;text-align:center;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--gold);margin-top:16px;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+.shake{animation:shake .35s ease-in-out;}
+
 /* ===== THANK YOU SECTION ===== */
 .rf-thankyou{position:relative;padding:140px 60px;background:var(--dark2);text-align:center;overflow:hidden;}
 .rf-ty-bg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(201,168,76,.06) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 20% 80%,rgba(26,79,138,.06) 0%,transparent 60%);}
@@ -268,6 +314,59 @@ html,body{background:#0A0A0A!important;color:#FFFFFF;font-family:'DM Sans',sans-
     <div class="rf-grid-item rf-reveal rf-d1"><span class="rf-grid-num">04</span><span class="rf-grid-icon">&#127919;</span><h3>7-Day Appointment Acceleration</h3><p>A precisely timed 7-day sequence to move qualified leads from inquiry to scheduled showing.</p></div>
     <div class="rf-grid-item rf-reveal rf-d2"><span class="rf-grid-num">05</span><span class="rf-grid-icon">&#128202;</span><h3>Live Revenue Dashboard</h3><p>Track every lead, response, booking, and conversion in real time. Know exactly where your pipeline stands.</p></div>
     <div class="rf-grid-item rf-reveal rf-d3"><span class="rf-grid-num">06</span><span class="rf-grid-icon">&#128737;</span><h3>MA Compliance Framework</h3><p>TCPA-compliant SMS, documented consent capture, opt-out management, and time-of-day guardrails built in.</p></div>
+  </div>
+</div>
+
+<div class="rf-calc rf-section" id="rf-calc">
+  <div class="rf-calc-hdr rf-reveal">
+    <span class="rf-calc-eyebrow">Revenue Leak Calculator</span>
+    <h2 class="rf-calc-hl">How much are you<br><em>leaving behind?</em></h2>
+    <p class="rf-calc-sub">Plug in your numbers. See your leak in real time.</p>
+  </div>
+  <div class="calc-grid rf-reveal rf-d1">
+    <div class="calc-inputs">
+      <div class="calc-input-group">
+        <label for="calcClosings">Closings per month</label>
+        <span class="calc-val" id="calcClosingsVal">5</span>
+        <input type="range" id="calcClosings" min="1" max="30" step="1" value="5">
+      </div>
+      <div class="calc-input-group">
+        <label for="calcCommission">Avg commission per closing</label>
+        <span class="calc-val" id="calcCommissionVal">$12,000</span>
+        <input type="range" id="calcCommission" min="3000" max="50000" step="1000" value="12000">
+      </div>
+      <div class="calc-input-group">
+        <label for="calcResponse">Current response time to new leads</label>
+        <select id="calcResponse">
+          <option value="0.08">Under 5 minutes</option>
+          <option value="0.22" selected>5&ndash;30 minutes</option>
+          <option value="0.38">30&ndash;60 minutes</option>
+          <option value="0.55">1&ndash;4 hours</option>
+          <option value="0.72">Over 4 hours</option>
+        </select>
+      </div>
+    </div>
+    <div class="calc-results">
+      <div>
+        <div class="calc-stat">
+          <span class="calc-stat-label">Your Annual Revenue</span>
+          <div class="calc-stat-value" id="calcAnnualRev">$720,000</div>
+        </div>
+        <div class="calc-stat">
+          <span class="calc-stat-label calc-stat-leak">Estimated Revenue Leak</span>
+          <div class="calc-stat-value" id="calcLeak">$158,400</div>
+        </div>
+        <div class="calc-stat">
+          <span class="calc-stat-label">Recoverable with RealtyFlow</span>
+          <div class="calc-stat-value" id="calcRecoverable">$66,528</div>
+        </div>
+      </div>
+      <div>
+        <div class="calc-divider"></div>
+        <p class="calc-footnote">Based on industry data: agents responding in under 5 minutes are 100&times; more likely to qualify leads than those who wait 30+ minutes.</p>
+        <a href="/booking" class="calc-cta">Book Your Free Audit &rarr;</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -441,6 +540,79 @@ html,body{background:#0A0A0A!important;color:#FFFFFF;font-family:'DM Sans',sans-
   </div>
 </div>
 
+<div id="exitModal" role="dialog" aria-modal="true" aria-labelledby="exitHl">
+  <div class="exit-card" id="exitCard">
+    <button class="exit-close" id="exitClose" aria-label="Close">&times;</button>
+    <span class="exit-eyebrow">Before You Go</span>
+    <h2 class="exit-hl" id="exitHl">Find out exactly how much<br><em>you're leaving behind.</em></h2>
+    <p class="exit-sub">Get the Revenue Leak Checklist &mdash; a short PDF that shows what&rsquo;s costing you deals and how to close the gaps. Free.</p>
+    <input type="email" class="exit-email" id="exitEmail" placeholder="Your email address" autocomplete="email">
+    <button class="exit-submit" id="exitSubmit">Send Me the Checklist</button>
+    <div class="exit-success" id="exitSuccess">&#10003; Check your inbox.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ===== EXIT INTENT ===== */
+  var modal=document.getElementById('exitModal');
+  var card=document.getElementById('exitCard');
+  var closeBtn=document.getElementById('exitClose');
+  var emailIn=document.getElementById('exitEmail');
+  var submitBtn=document.getElementById('exitSubmit');
+  var successMsg=document.getElementById('exitSuccess');
+  var BLOCKED=['/booking','/thank-you','/portal'];
+  function shouldSkip(){
+    var p=window.location.pathname;
+    return BLOCKED.some(function(b){return p.startsWith(b);});
+  }
+  function openModal(){
+    if(sessionStorage.getItem('exitSeen')||shouldSkip())return;
+    sessionStorage.setItem('exitSeen','1');
+    modal.style.display='flex';
+  }
+  function closeModal(){
+    modal.style.display='none';
+  }
+  document.addEventListener('mouseleave',function(e){
+    if(e.clientY<0)openModal();
+  });
+  closeBtn.addEventListener('click',closeModal);
+  modal.addEventListener('click',function(e){
+    if(e.target===modal)closeModal();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&modal.style.display==='flex')closeModal();
+  });
+  function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
+  function shakeInput(){
+    emailIn.classList.remove('shake');
+    void emailIn.offsetWidth;
+    emailIn.classList.add('shake');
+    emailIn.addEventListener('animationend',function(){emailIn.classList.remove('shake');},{once:true});
+  }
+  submitBtn.addEventListener('click',function(){
+    var val=emailIn.value.trim();
+    if(!isValidEmail(val)){shakeInput();return;}
+    submitBtn.disabled=true;
+    submitBtn.textContent='Sending…';
+    fetch('https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/lead-capture',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:val,source:'exit-intent'})
+    }).then(function(){
+      submitBtn.style.display='none';
+      emailIn.style.display='none';
+      successMsg.style.display='block';
+      setTimeout(closeModal,2000);
+    }).catch(function(){
+      submitBtn.disabled=false;
+      submitBtn.textContent='Send Me the Checklist';
+    });
+  });
+})();
+</script>
+
 <script>
 (function(){
   var dot=document.getElementById('rfDot'),ring=document.getElementById('rfRing');
@@ -457,6 +629,41 @@ html,body{background:#0A0A0A!important;color:#FFFFFF;font-family:'DM Sans',sans-
     entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
   },{threshold:0.1});
   document.querySelectorAll('.rf-reveal').forEach(function(el){obs.observe(el);});
+})();
+</script>
+
+<script>
+(function(){
+  /* ===== ROI CALCULATOR ===== */
+  var closingsEl=document.getElementById('calcClosings');
+  var closingsVal=document.getElementById('calcClosingsVal');
+  var commissionEl=document.getElementById('calcCommission');
+  var commissionVal=document.getElementById('calcCommissionVal');
+  var responseEl=document.getElementById('calcResponse');
+  var annualRevEl=document.getElementById('calcAnnualRev');
+  var leakEl=document.getElementById('calcLeak');
+  var recoverableEl=document.getElementById('calcRecoverable');
+  if(!closingsEl)return;
+  function fmt(n){return n.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});}
+  function calc(){
+    var closings=parseInt(closingsEl.value,10);
+    var commission=parseInt(commissionEl.value,10);
+    var leakPct=parseFloat(responseEl.value);
+    closingsVal.textContent=closings;
+    commissionVal.textContent=fmt(commission);
+    var annualRev=closings*12*commission;
+    var annualLeak=annualRev*leakPct;
+    var recoverable=annualLeak*0.42;
+    annualRevEl.textContent=fmt(annualRev);
+    leakEl.textContent=fmt(annualLeak);
+    recoverableEl.textContent=fmt(recoverable);
+  }
+  [closingsEl,commissionEl].forEach(function(el){
+    el.addEventListener('input',calc);
+    el.addEventListener('change',calc);
+  });
+  responseEl.addEventListener('change',calc);
+  calc();
 })();
 </script>
 
