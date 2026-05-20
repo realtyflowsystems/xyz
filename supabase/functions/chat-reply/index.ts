@@ -1,4 +1,4 @@
-// Twilio incoming-SMS webhook — fires when Erics texts back to the Twilio number.
+// Telnyx incoming-SMS webhook — fires when Erics texts back to the Telnyx number.
 // Routes reply to the most recent open session and notifies the visitor.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@2';
@@ -9,20 +9,28 @@ const supabase = createClient(
 );
 const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
 
-const ERICS_PHONE  = Deno.env.get('ERICS_PHONE')!;
-// Visitor is considered "offline" if last_seen_at is older than this many ms
-const OFFLINE_MS   = 3 * 60 * 1000; // 3 minutes
+const ERICS_PHONE = Deno.env.get('ERICS_PHONE')!;
+const OFFLINE_MS  = 3 * 60 * 1000; // 3 minutes
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') return twiml('<Response/>');
+  if (req.method !== 'POST') return new Response('', { status: 405 });
 
-  const raw  = await req.text();
-  const p    = new URLSearchParams(raw);
-  const from = p.get('From') ?? '';
-  const body = (p.get('Body') ?? '').trim();
+  let from = '';
+  let body = '';
+  try {
+    const payload = await req.json();
+    // Telnyx webhook envelope: data.payload.from.phone_number + data.payload.text
+    const p = payload?.data?.payload;
+    from = p?.from?.phone_number ?? '';
+    body = (p?.text ?? '').trim();
+  } catch {
+    return new Response('', { status: 400 });
+  }
 
   // Only accept messages from Erics's phone
-  if (!isSamePhone(from, ERICS_PHONE) || !body) return twiml('<Response/>');
+  if (!isSamePhone(from, ERICS_PHONE) || !body) {
+    return new Response('', { status: 200 });
+  }
 
   // Find most recent open session
   const { data: session } = await supabase
@@ -33,7 +41,10 @@ Deno.serve(async (req) => {
     .limit(1).single();
 
   if (!session) {
-    return twiml('<Response><Message>No active chat sessions.</Message></Response>');
+    return new Response(JSON.stringify({ message: 'No active chat sessions.' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Store agent reply
@@ -47,10 +58,10 @@ Deno.serve(async (req) => {
     .eq('id', session.id);
 
   // Email the visitor if they've left the page and have an email on file
-  const lastSeen   = session.last_seen_at ? new Date(session.last_seen_at).getTime() : 0;
-  const isOffline  = (Date.now() - lastSeen) > OFFLINE_MS;
-  const hasEmail   = !!session.visitor_email;
-  const firstName  = (session.visitor_name ?? 'there').split(' ')[0];
+  const lastSeen  = session.last_seen_at ? new Date(session.last_seen_at).getTime() : 0;
+  const isOffline = (Date.now() - lastSeen) > OFFLINE_MS;
+  const hasEmail  = !!session.visitor_email;
+  const firstName = (session.visitor_name ?? 'there').split(' ')[0];
 
   if (isOffline && hasEmail) {
     await resend.emails.send({
@@ -61,16 +72,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  return twiml('<Response/>');
+  return new Response('', { status: 200 });
 });
 
 function isSamePhone(a: string, b: string): boolean {
   const clean = (s: string) => s.replace(/\D/g, '').slice(-10);
   return clean(a) === clean(b);
-}
-
-function twiml(xml: string) {
-  return new Response(xml, { headers: { 'Content-Type': 'text/xml' } });
 }
 
 function emailHtml(firstName: string, reply: string) {

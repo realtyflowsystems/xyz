@@ -5,10 +5,9 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-const ERICS_PHONE   = Deno.env.get('ERICS_PHONE')!;
-const TWILIO_SID    = Deno.env.get('TWILIO_ACCOUNT_SID')!;
-const TWILIO_TOKEN  = Deno.env.get('TWILIO_AUTH_TOKEN')!;
-const TWILIO_PHONE  = Deno.env.get('TWILIO_PHONE')!;
+const ERICS_PHONE  = Deno.env.get('ERICS_PHONE')!;
+const TELNYX_KEY   = Deno.env.get('TELNYX_API_KEY')!;
+const TELNYX_PHONE = Deno.env.get('TELNYX_PHONE')!;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -121,17 +120,14 @@ Deno.serve(async (req) => {
 });
 
 async function sms(body: string) {
-  await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({ From: TWILIO_PHONE, To: ERICS_PHONE, Body: body }).toString(),
-    }
-  );
+  await fetch('https://api.telnyx.com/v2/messages', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TELNYX_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: TELNYX_PHONE, to: ERICS_PHONE, text: body }),
+  });
 }
 
 function ok(data: unknown) {

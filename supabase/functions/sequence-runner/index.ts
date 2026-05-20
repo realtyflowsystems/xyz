@@ -49,10 +49,9 @@ serve(async (_req: Request) => {
     return new Response(JSON.stringify({ processed: 0, message: "Nothing due" }), { status: 200 });
   }
 
-  const resendKey   = Deno.env.get("RESEND_API_KEY")!;
-  const accountSid  = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-  const authToken   = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-  const fromPhone   = Deno.env.get("TWILIO_PHONE_NUMBER")!;
+  const resendKey  = Deno.env.get("RESEND_API_KEY")!;
+  const telnyxKey  = Deno.env.get("TELNYX_API_KEY")!;
+  const fromPhone  = Deno.env.get("TELNYX_PHONE")!;
 
   let sent = 0;
   const errors: string[] = [];
@@ -110,7 +109,7 @@ serve(async (_req: Request) => {
       if (lead.opted_out_sms || !lead.phone) {
         sendOk = true; // skip silently, advance step
       } else {
-        sendOk = await sendSMS(accountSid, authToken, fromPhone, lead.phone, body);
+        sendOk = await sendSMS(telnyxKey, fromPhone, lead.phone, body);
 
         if (sendOk) {
           await supabase.from("sms_messages").insert({
@@ -196,24 +195,20 @@ async function sendEmail(
 }
 
 async function sendSMS(
-  accountSid: string,
-  authToken: string,
+  apiKey: string,
   from: string,
   to: string,
   body: string
 ): Promise<boolean> {
   try {
-    const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ From: from, To: to, Body: body }).toString(),
-      }
-    );
+    const res = await fetch("https://api.telnyx.com/v2/messages", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to, text: body }),
+    });
     return res.ok;
   } catch {
     return false;
