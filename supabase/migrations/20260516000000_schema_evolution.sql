@@ -14,6 +14,12 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS market       text;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS db_size      text;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS opted_out_sms boolean default false;
 
+-- Drop views that depend on leads.stage before converting its type.
+-- pipeline_view is recreated with security_invoker=on by 20260518000000.
+-- analytics_summary used text stage comparisons; replaced below with integer-based version.
+DROP VIEW IF EXISTS analytics_summary;
+DROP VIEW IF EXISTS pipeline_view;
+
 -- Convert leads.stage from text (initial default 'new') to integer
 DO $$
 BEGIN
@@ -28,6 +34,19 @@ BEGIN
     ALTER TABLE leads ALTER COLUMN stage SET DEFAULT 0;
   END IF;
 END $$;
+
+-- Recreate analytics_summary using integer stage values
+-- (stage 5 = client, stage 3 = booked per STAGE_CLIENT in stripe-webhook)
+CREATE OR REPLACE VIEW analytics_summary AS
+SELECT
+  (SELECT count(*)                          FROM leads)                                       AS total_leads,
+  (SELECT count(*)                          FROM leads    WHERE stage >= 3)                   AS booked_calls,
+  (SELECT count(*)                          FROM leads    WHERE stage = 5)                    AS total_clients,
+  (SELECT count(*)                          FROM bookings WHERE status = 'completed')         AS calls_completed,
+  (SELECT count(*)                          FROM bookings WHERE status = 'no_show')           AS no_shows,
+  (SELECT coalesce(sum(amount_cents), 0)    FROM payments WHERE status = 'succeeded')         AS revenue_cents,
+  (SELECT count(*)                          FROM sequence_contacts WHERE status = 'active')   AS active_sequences,
+  (SELECT count(*)                          FROM sequence_contacts WHERE status = 'booked')   AS sequence_bookings;
 
 -- ── BOOKINGS ───────────────────────────────────────────────────────────────
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS slot_time            timestamptz;
