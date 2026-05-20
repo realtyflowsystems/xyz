@@ -1,11 +1,11 @@
 // sms-reminder — RealtyFlow Systems
 // Runs every 5 minutes via Supabase pg_cron.
-// Sends Twilio SMS 1 hour before each confirmed booking.
+// Sends Telnyx SMS 1 hour before each confirmed booking.
 //
 // To schedule: Dashboard → Database → Extensions → enable pg_cron, then:
 // select cron.schedule('sms-reminder', '*/5 * * * *',
 //   $$select net.http_post(
-//     url:='https://YOUR_PROJECT_ID.supabase.co/functions/v1/sms-reminder',
+//     url:='https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/sms-reminder',
 //     headers:='{"Authorization":"Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
 //   )$$
 // );
@@ -19,17 +19,20 @@ serve(async (_req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  const TELNYX_KEY   = Deno.env.get("TELNYX_API_KEY")!;
+  const TELNYX_PHONE = Deno.env.get("TELNYX_PHONE")!;
+
   // Find confirmed bookings in the 55–65 min window that haven't been reminded
   const windowStart = new Date(Date.now() + 55 * 60 * 1000).toISOString();
   const windowEnd   = new Date(Date.now() + 65 * 60 * 1000).toISOString();
 
   const { data: bookings, error } = await supabase
     .from("bookings")
-    .select("*")
+    .select("id, lead_id, slot_time, status, reminder_1h_sent, leads(fname, phone, opted_out_sms)")
     .eq("status", "confirmed")
-    .eq("sms_reminder_sent", false)
-    .gte("scheduled_at", windowStart)
-    .lte("scheduled_at", windowEnd);
+    .eq("reminder_1h_sent", false)
+    .gte("slot_time", windowStart)
+    .lte("slot_time", windowEnd);
 
   if (error) {
     console.error("DB query error:", error);
@@ -39,50 +42,42 @@ serve(async (_req: Request) => {
   const results: { booking_id: string; status: string }[] = [];
 
   for (const booking of bookings ?? []) {
-    if (!booking.phone) continue;
+    const lead = booking.leads as { fname: string; phone: string | null; opted_out_sms: boolean } | null;
+    if (!lead?.phone || lead.opted_out_sms) continue;
 
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-    const authToken  = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-    const fromPhone  = Deno.env.get("TWILIO_PHONE_NUMBER")!;
-
-    const firstName = booking.name.split(" ")[0];
+    const firstName = lead.fname ?? "there";
     const message =
       `Hi ${firstName} — your RealtyFlow Revenue Audit starts in 1 hour. ` +
       `We'll call you at this number. ` +
       `Questions? Email erics@realtyflow.xyz. Reply STOP to opt out.`;
 
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          From: fromPhone,
-          To:   booking.phone,
-          Body: message,
-        }).toString(),
-      }
-    );
+    const telnyxRes = await fetch("https://api.telnyx.com/v2/messages", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${TELNYX_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from: TELNYX_PHONE, to: lead.phone, text: message }),
+    });
 
-    const twilioData = await twilioRes.json();
+    const telnyxData = await telnyxRes.json();
+    const msgId      = telnyxData?.data?.id ?? null;
+    const msgStatus  = telnyxData?.data?.to?.[0]?.status ?? "queued";
 
     await supabase.from("sms_log").insert({
-      lead_id:    booking.lead_id,
-      to_phone:   booking.phone,
+      lead_id:   booking.lead_id,
+      to_phone:  lead.phone,
       message,
-      twilio_sid: twilioData.sid ?? null,
-      status:     twilioData.status ?? "queued",
+      twilio_sid: msgId,   // column kept for schema compatibility; stores Telnyx message ID
+      status:    msgStatus,
     });
 
     await supabase
       .from("bookings")
-      .update({ sms_reminder_sent: true })
+      .update({ reminder_1h_sent: true })
       .eq("id", booking.id);
 
-    results.push({ booking_id: booking.id, status: twilioData.status ?? "sent" });
+    results.push({ booking_id: booking.id, status: msgStatus });
   }
 
   return new Response(
