@@ -36,6 +36,7 @@ serve(async (req: Request) => {
   const stripeSessionId    = session.id;
   const stripePaymentIntent = session.payment_intent ?? null;
   const tier               = session.metadata?.tier ?? session.metadata?.plan ?? null;
+  const purchaseType       = session.metadata?.type ?? null;
 
   if (!customerEmail) {
     console.warn("No customer email in event", event.id);
@@ -113,6 +114,14 @@ serve(async (req: Request) => {
   // Send onboarding email
   const resendKey = Deno.env.get("RESEND_API_KEY");
   if (resendKey) {
+    const isAudit   = purchaseType === "audit";
+    const subject   = isAudit
+      ? `Your Revenue Leak Audit is confirmed, ${fname}.`
+      : `Your RealtyFlow portal is live, ${fname}.`;
+    const emailHtml = isAudit
+      ? auditEmail(fname, client.portal_token)
+      : onboardingEmail(fname, client.portal_token, tier);
+
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -120,16 +129,16 @@ serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "RealtyFlow Systems <erics@realtyflow.xyz>",
+        from: "Erics at RealtyFlow <erics@realtyflow.xyz>",
         to:   [customerEmail],
-        subject: "Welcome to RealtyFlow Systems — Your Portal is Ready",
-        html:  onboardingEmail(fname, client.portal_token, tier),
+        subject,
+        html: emailHtml,
       }),
     });
 
     await supabase.from("emails").insert({
       lead_id:  lead.id,
-      subject:  "Welcome to RealtyFlow Systems",
+      subject,
       type:     "transactional",
       sent_at:  new Date().toISOString(),
     });
@@ -170,40 +179,159 @@ async function verifyStripeSignature(payload: string, header: string, secret: st
   }
 }
 
-// ── Onboarding email ───────────────────────────────────────────────────────
-function onboardingEmail(fname: string, portalToken: string, tier: string | null): string {
-  const portalUrl = `https://realtyflow.xyz/portal?token=${portalToken}`;
-  const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : "RealtyFlow";
+// ── Email helpers ──────────────────────────────────────────────────────────
+const TIER_NAMES: Record<string, string> = {
+  "Core":                  "Core Speed System",
+  "Revenue Acceleration":  "Revenue Acceleration System",
+  "Team Infrastructure":   "Team Infrastructure System",
+};
 
+function emailShell(body: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/></head>
-<body style="background:#0A0A0A;color:#fff;font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:0;">
-  <div style="padding:32px 40px;border-bottom:1px solid rgba(201,168,76,.2);">
-    <p style="font-size:10px;color:#C9A84C;letter-spacing:.3em;text-transform:uppercase;margin:0 0 8px;">RealtyFlow Systems</p>
-    <h1 style="font-size:30px;font-weight:300;margin:0;line-height:1.2;">Welcome,<br><em style="font-style:italic;color:#C9A84C;">${fname}</em></h1>
-  </div>
-  <div style="padding:32px 40px;">
-    <p style="font-size:14px;color:#AAA;line-height:1.75;margin:0 0 8px;">
-      Payment confirmed. You're on the <strong style="color:#E0E0E0;">${tierLabel}</strong> plan. Your portal is live.
-    </p>
-    <div style="margin:28px 0;">
-      <a href="${portalUrl}"
-         style="display:inline-block;padding:14px 28px;background:#C9A84C;color:#0A0A0A;
-                font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;">
-        ACCESS YOUR PORTAL →
-      </a>
-    </div>
-    <p style="font-size:13px;color:#AAA;line-height:1.75;">
-      I'll be in touch within 24 hours to schedule your kickoff call. Keep this email — your portal link is unique to your account.
-    </p>
-    <p style="font-size:13px;color:#AAA;margin-top:16px;">
-      Questions? <a href="mailto:erics@realtyflow.xyz" style="color:#C9A84C;text-decoration:none;">erics@realtyflow.xyz</a>
-    </p>
-  </div>
-  <div style="padding:20px 40px;border-top:1px solid rgba(255,255,255,.06);">
-    <p style="font-size:11px;color:#444;margin:0;">RealtyFlow Systems · 820 Massachusetts Ave, Cambridge, MA 02139</p>
-  </div>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#0A0A0A;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#0A0A0A;border:1px solid rgba(201,168,76,.15);">
+${body}
+<tr><td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,.05);">
+  <p style="margin:0;font-size:11px;color:#333;font-family:Arial,sans-serif;line-height:1.6;">
+    RealtyFlow Systems &middot; 820 Massachusetts Ave, Cambridge, MA 02139<br/>
+    <a href="mailto:erics@realtyflow.xyz" style="color:#555;text-decoration:none;">erics@realtyflow.xyz</a> &middot; (617) 702-2742
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
 </body>
 </html>`;
 }
+
+// ── Setup client onboarding email ──────────────────────────────────────────
+function onboardingEmail(fname: string, portalToken: string, tier: string | null): string {
+  const portalUrl  = `https://realtyflow.xyz/portal?token=${portalToken}`;
+  const tierLabel  = (tier && TIER_NAMES[tier]) ? TIER_NAMES[tier] : (tier ?? "RealtyFlow Systems");
+
+  return emailShell(`
+<tr><td style="padding:36px 40px 24px;border-bottom:1px solid rgba(201,168,76,.15);">
+  <p style="margin:0 0 10px;font-size:10px;color:#C9A84C;letter-spacing:.3em;text-transform:uppercase;font-family:Arial,sans-serif;">RealtyFlow Systems</p>
+  <h1 style="margin:0;font-size:32px;font-weight:300;color:#FFFFFF;line-height:1.15;font-family:Georgia,serif;">
+    Welcome, <em style="font-style:italic;color:#C9A84C;">${fname}.</em>
+  </h1>
+</td></tr>
+
+<tr><td style="padding:28px 40px 8px;">
+  <p style="margin:0 0 6px;font-size:12px;color:#C9A84C;letter-spacing:.2em;text-transform:uppercase;font-family:Arial,sans-serif;">Your Investment</p>
+  <p style="margin:0;font-size:16px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">${tierLabel}</p>
+</td></tr>
+
+<tr><td style="padding:8px 40px 28px;">
+  <p style="margin:0;font-size:14px;color:#AAAAAA;line-height:1.8;font-family:Arial,sans-serif;">
+    Payment confirmed. Your client portal is live — that's where you'll track your build, access your onboarding checklist, and stay in direct contact with your implementation team.
+  </p>
+</td></tr>
+
+<tr><td style="padding:0 40px 32px;">
+  <a href="${portalUrl}"
+     style="display:inline-block;padding:16px 32px;background:#C9A84C;color:#0A0A0A;
+            font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+            text-decoration:none;font-family:Arial,sans-serif;">
+    ACCESS YOUR PORTAL →
+  </a>
+  <p style="margin:12px 0 0;font-size:11px;color:#555;font-family:Arial,sans-serif;">
+    Keep this email — your portal link is unique to your account.
+  </p>
+</td></tr>
+
+<tr><td style="padding:0 40px 32px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid rgba(255,255,255,.06);padding-top:28px;">
+    <tr><td>
+      <p style="margin:0 0 20px;font-size:10px;color:#C9A84C;letter-spacing:.25em;text-transform:uppercase;font-family:Arial,sans-serif;">What Happens Next</p>
+    </td></tr>
+    <tr><td style="padding:0 0 16px;">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">1 &nbsp;&middot;&nbsp; Kickoff call within 24 hours</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.65;font-family:Arial,sans-serif;">I'll reach out personally to schedule your onboarding call. We'll lock in your database details, Zillow credentials, and script preferences.</p>
+    </td></tr>
+    <tr><td style="padding:0 0 16px;">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">2 &nbsp;&middot;&nbsp; Get three things ready</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.65;font-family:Arial,sans-serif;">Your contact database as a CSV &nbsp;&bull;&nbsp; Zillow account access &nbsp;&bull;&nbsp; 15 minutes for the call. That's everything we need from you. The rest is on us.</p>
+    </td></tr>
+    <tr><td>
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">3 &nbsp;&middot;&nbsp; System goes live in 5–7 business days</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.65;font-family:Arial,sans-serif;">Sub-60 second lead response active. Database reactivation running. You close deals — the infrastructure runs.</p>
+    </td></tr>
+  </table>
+</td></tr>
+
+<tr><td style="padding:0 40px 32px;border-top:1px solid rgba(255,255,255,.06);">
+  <p style="margin:24px 0 6px;font-size:13px;color:#AAAAAA;line-height:1.7;font-family:Arial,sans-serif;">
+    Questions before your kickoff call? Reply here or email me directly.
+  </p>
+  <p style="margin:0;font-size:13px;color:#AAAAAA;font-family:Arial,sans-serif;">
+    — Erics<br/>
+    <a href="mailto:erics@realtyflow.xyz" style="color:#C9A84C;text-decoration:none;">erics@realtyflow.xyz</a> &nbsp;&middot;&nbsp; (617) 702-2742
+  </p>
+</td></tr>
+`);
+}
+
+// ── Revenue Leak Audit confirmation email ──────────────────────────────────
+function auditEmail(fname: string, portalToken: string): string {
+  const portalUrl = `https://realtyflow.xyz/portal?token=${portalToken}`;
+
+  return emailShell(`
+<tr><td style="padding:36px 40px 24px;border-bottom:1px solid rgba(201,168,76,.15);">
+  <p style="margin:0 0 10px;font-size:10px;color:#C9A84C;letter-spacing:.3em;text-transform:uppercase;font-family:Arial,sans-serif;">RealtyFlow Systems</p>
+  <h1 style="margin:0;font-size:32px;font-weight:300;color:#FFFFFF;line-height:1.15;font-family:Georgia,serif;">
+    Got it, <em style="font-style:italic;color:#C9A84C;">${fname}.</em>
+  </h1>
+</td></tr>
+
+<tr><td style="padding:28px 40px 8px;">
+  <p style="margin:0 0 6px;font-size:12px;color:#C9A84C;letter-spacing:.2em;text-transform:uppercase;font-family:Arial,sans-serif;">Revenue Leak Audit — $497</p>
+  <p style="margin:0;font-size:14px;color:#AAAAAA;line-height:1.8;font-family:Arial,sans-serif;">
+    Payment confirmed. I'll be reviewing your business personally and delivering your full audit report within 48 hours.
+  </p>
+</td></tr>
+
+<tr><td style="padding:8px 40px 32px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid rgba(255,255,255,.06);padding-top:24px;">
+    <tr><td>
+      <p style="margin:0 0 20px;font-size:10px;color:#C9A84C;letter-spacing:.25em;text-transform:uppercase;font-family:Arial,sans-serif;">What Happens Next</p>
+    </td></tr>
+    <tr><td style="padding:0 0 16px;">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">1 &nbsp;&middot;&nbsp; Intake questionnaire — within a few hours</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.65;font-family:Arial,sans-serif;">I'll send a short intake form — 5 to 10 minutes. It covers your lead sources, current tools, and follow-up habits. That's what the audit is built from.</p>
+    </td></tr>
+    <tr><td style="padding:0 0 16px;">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">2 &nbsp;&middot;&nbsp; Audit delivered within 48 hours</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.65;font-family:Arial,sans-serif;">You'll receive four things: a lead flow breakdown, follow-up gap analysis, conversion rate scorecard, and a custom 90-day action plan. Delivered by email.</p>
+    </td></tr>
+    <tr><td>
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#E0E0E0;font-family:Arial,sans-serif;">3 &nbsp;&middot;&nbsp; Optional: apply it with us</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.65;font-family:Arial,sans-serif;">If the audit reveals gaps that our done-for-you system is built to close, your $497 applies as a credit toward any setup package.</p>
+    </td></tr>
+  </table>
+</td></tr>
+
+<tr><td style="padding:0 40px 32px;">
+  <a href="${portalUrl}"
+     style="display:inline-block;padding:14px 28px;border:1px solid rgba(201,168,76,.4);color:#C9A84C;
+            font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+            text-decoration:none;font-family:Arial,sans-serif;">
+    VIEW YOUR CLIENT PORTAL →
+  </a>
+</td></tr>
+
+<tr><td style="padding:0 40px 32px;border-top:1px solid rgba(255,255,255,.06);">
+  <p style="margin:24px 0 6px;font-size:13px;color:#AAAAAA;line-height:1.7;font-family:Arial,sans-serif;">
+    Watch for the intake form — it'll come from the same address. Reply here if you have questions in the meantime.
+  </p>
+  <p style="margin:0;font-size:13px;color:#AAAAAA;font-family:Arial,sans-serif;">
+    — Erics<br/>
+    <a href="mailto:erics@realtyflow.xyz" style="color:#C9A84C;text-decoration:none;">erics@realtyflow.xyz</a> &nbsp;&middot;&nbsp; (617) 702-2742
+  </p>
+</td></tr>
+`);}
+

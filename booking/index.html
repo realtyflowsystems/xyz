@@ -61,6 +61,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 .bk-consent a{color:var(--gold);text-decoration:none;}
 .bk-footer{padding:28px 60px;background:var(--dark2);border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
 .bk-footer-brand{font-family:"Cormorant Garamond",serif;font-size:15px;font-weight:600;color:var(--gold);}
+.bk-footer-brand span{display:block;font-size:10px;color:var(--gray);font-family:"DM Sans",sans-serif;letter-spacing:.15em;margin-top:3px;}
 .bk-footer-links{display:flex;gap:20px;}
 .bk-footer-links a{font-size:11px;color:var(--gray);text-decoration:none;cursor:none;transition:color .3s;}
 .bk-footer-links a:hover{color:var(--gold-l);}
@@ -114,10 +115,12 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     <div class="slot-picker" id="slotPicker">
       <div class="slot-dates" id="slotDates"></div>
       <div class="slot-times" id="slotTimes"></div>
+      <div class="slot-selected-display" id="slotDisplay"></div>
       <button type="button" class="slot-none-btn" id="slotNoneBtn">No preference — we'll reach out within 24 hrs</button>
     </div>
 
     <!-- Form Section -->
+    <div class="bk-form-label" style="margin-top:32px;">Your Information</div>
     <div class="bk-form-wrapper">
       <form class="bk-form" id="bookingForm">
         <div class="bk-form-group">
@@ -162,11 +165,11 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 </div>
 
 <div class="bk-footer">
-  <div class="bk-footer-brand">RealtyFlow Systems</div>
+  <div class="bk-footer-brand">RealtyFlow Systems<span>Greater Boston Revenue Infrastructure</span></div>
   <div class="bk-footer-links">
-    <a href="/">Home</a><a href="/offer-comparison">Offer Comparison</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:erics@realtyflow.xyz">Contact</a>
+    <a href="/">Home</a><a href="/offer-comparison">Offer Comparison</a><a href="/audit">Revenue Leak Audit</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:erics@realtyflow.xyz">Contact</a>
   </div>
-  <div class="bk-footer-copy">&copy; 2026 RealtyFlow Systems &middot; 820 Massachusetts Ave, Cambridge, MA 02139 &middot; MA TCPA Compliant</div>
+  <div class="bk-footer-copy">&copy; 2026 RealtyFlow Systems &middot; 820 Massachusetts Ave, Cambridge, MA 02139 &middot; (617) 702-2742<br/>SMS opt-out: Reply STOP at any time &bull; MA TCPA Compliant</div>
 </div>
 
 <script>
@@ -203,6 +206,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 
   var datesContainer = document.getElementById('slotDates');
   var timesContainer = document.getElementById('slotTimes');
+  var slotDisplay = document.getElementById('slotDisplay');
   var noneBtn = document.getElementById('slotNoneBtn');
   var activeDateBtn = null;
   var activeTimeBtn = null;
@@ -223,6 +227,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
       activeDate = d;
       noneBtn.classList.remove('active');
       selectedSlot = null;
+      slotDisplay.textContent = '';
       if(activeTimeBtn) { activeTimeBtn.classList.remove('active'); activeTimeBtn=null; }
       buildTimes(d);
     });
@@ -248,6 +253,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
         activeTimeBtn = btn;
         selectedSlot = iso;
         noneBtn.classList.remove('active');
+        slotDisplay.textContent = '✓ ' + DAYS[d.getDay()] + ' ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ' at ' + t.label + ' ET';
       });
       timesContainer.appendChild(btn);
     });
@@ -263,6 +269,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   noneBtn.addEventListener('click', function() {
     noneBtn.classList.add('active');
     selectedSlot = null;
+    slotDisplay.textContent = '';
     if(activeDateBtn) { activeDateBtn.classList.remove('active'); activeDateBtn=null; }
     if(activeTimeBtn) { activeTimeBtn.classList.remove('active'); activeTimeBtn=null; }
     activeDate = null;
@@ -330,5 +337,6 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   });
 })();
 </script>
+<script src="/js/chat-widget.js" defer></script>
 </body>
 </html>
