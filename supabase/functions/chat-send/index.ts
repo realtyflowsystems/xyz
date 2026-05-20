@@ -18,20 +18,27 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    // ── GET: poll for new messages ──────────────────────────
+    // ── GET: poll for new messages ──────────────────────────────────────────────
     if (req.method === 'GET') {
       const sk = new URL(req.url).searchParams.get('session_key');
       if (!sk) return err('Missing session_key', 400);
 
       const { data: session } = await supabase
-        .from('chat_sessions').select('id')
+        .from('chat_sessions').select('id,auto_reply_sent,last_seen_at')
         .eq('session_key', sk).single();
       if (!session) return err('Session not found', 404);
 
-      // Update last_seen_at so we know the visitor is still on the page
+      const now = new Date().toISOString();
+
+      // Update last_seen_at so we know visitor is still on the page
       await supabase.from('chat_sessions')
-        .update({ last_seen_at: new Date().toISOString() })
+        .update({ last_seen_at: now })
         .eq('id', session.id);
+
+      // ── Auto-reply logic ──────────────────────────────────────────────────────
+      if (!session.auto_reply_sent) {
+        await maybeAutoReply(session.id);
+      }
 
       const { data: msgs } = await supabase
         .from('chat_messages').select('id,sender,body,created_at')
@@ -41,7 +48,7 @@ Deno.serve(async (req) => {
       return ok({ messages: msgs ?? [] });
     }
 
-    // ── POST: send a message ────────────────────────────────
+    // ── POST: send a message ────────────────────────────────────────────────────
     const body = await req.json();
     const { session_key, name, email, message } = body;
 
@@ -63,6 +70,11 @@ Deno.serve(async (req) => {
       sessionKeyOut = session.session_key;
       visitorName   = session.visitor_name ?? 'Visitor';
       visitorEmail  = session.visitor_email;
+
+      // Reset auto_reply_sent so a new unanswered message can trigger another auto-reply
+      await supabase.from('chat_sessions')
+        .update({ auto_reply_sent: false })
+        .eq('id', sessionId);
     } else {
       if (!name?.trim()) return err('Name is required for new session', 400);
       const { data: session, error } = await supabase
@@ -77,7 +89,7 @@ Deno.serve(async (req) => {
       isNewSession  = true;
     }
 
-    const now = new Date().toISOString();
+    const nowTs = new Date().toISOString();
 
     // Store visitor message
     await supabase.from('chat_messages').insert({
@@ -86,7 +98,7 @@ Deno.serve(async (req) => {
       body: message.trim(),
     });
 
-    // On first message: store auto-reply so widget never feels dead
+    // On first message: store immediate auto-reply so widget never feels dead
     if (isNewSession) {
       const firstName = visitorName.split(' ')[0];
       await supabase.from('chat_messages').insert({
@@ -97,7 +109,7 @@ Deno.serve(async (req) => {
     }
 
     await supabase.from('chat_sessions')
-      .update({ last_message_at: now, last_seen_at: now })
+      .update({ last_message_at: nowTs, last_seen_at: nowTs })
       .eq('id', sessionId);
 
     // SMS Erics — include short code for multi-session routing
@@ -118,6 +130,49 @@ Deno.serve(async (req) => {
     return err('Internal error', 500);
   }
 });
+
+// ── Auto-reply ─────────────────────────────────────────────────────────────────
+async function maybeAutoReply(sessionId: string) {
+  // Get auto-reply settings
+  const { data: settings } = await supabase
+    .from('chat_settings')
+    .select('key,value')
+    .in('key', ['auto_reply_enabled', 'auto_reply_delay_minutes', 'auto_reply_message']);
+
+  const cfg: Record<string, string> = {};
+  (settings ?? []).forEach((r: { key: string; value: string }) => { cfg[r.key] = r.value; });
+
+  if (cfg['auto_reply_enabled'] !== 'true') return;
+
+  const delayMs = parseInt(cfg['auto_reply_delay_minutes'] ?? '5') * 60_000;
+
+  // Get the last message in this session
+  const { data: lastMsg } = await supabase
+    .from('chat_messages')
+    .select('sender,created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!lastMsg || lastMsg.sender !== 'visitor') return;
+
+  const msSinceLast = Date.now() - new Date(lastMsg.created_at).getTime();
+  if (msSinceLast < delayMs) return;
+
+  const replyText = cfg['auto_reply_message'] ??
+    "Hey! Erics is away from his phone right now — he'll get back to you within a few hours.";
+
+  await supabase.from('chat_messages').insert({
+    session_id: sessionId,
+    sender: 'agent',
+    body: replyText,
+  });
+
+  await supabase.from('chat_sessions')
+    .update({ auto_reply_sent: true })
+    .eq('id', sessionId);
+}
 
 async function sms(body: string) {
   await fetch('https://api.telnyx.com/v2/messages', {

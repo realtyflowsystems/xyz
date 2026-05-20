@@ -288,6 +288,43 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
 }
 .empty-state strong { color:var(--gold-d); display:block; font-size:14px; margin-bottom:8px; font-family:'Cormorant Garamond',serif; font-weight:300; }
 
+/* ── TEAMS VIEW ── */
+.team-card { background:var(--dark2); border:1px solid rgba(201,168,76,.1); margin-bottom:16px; }
+.team-card-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; cursor:pointer; }
+.team-card-header:hover { background:rgba(201,168,76,.03); }
+.team-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:18px; color:#fff; }
+.team-meta { font-size:11px; font-family:'DM Mono',monospace; color:var(--gray); margin-top:2px; }
+.team-badge { font-size:10px; font-family:'DM Mono',monospace; letter-spacing:.1em; padding:3px 10px; border:1px solid; }
+.team-badge.locked { color:#FF6666; border-color:rgba(255,102,102,.3); background:rgba(255,102,102,.05); }
+.team-badge.active { color:var(--gold); border-color:rgba(201,168,76,.3); background:rgba(201,168,76,.05); }
+.team-badge.pending { color:var(--gray); border-color:rgba(136,136,136,.3); }
+.team-agents { border-top:1px solid rgba(255,255,255,.05); }
+.agent-row { display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,.03); }
+.agent-row:last-child { border-bottom:none; }
+.agent-avatar { width:32px; height:32px; border-radius:50%; background:var(--dark3); border:1px solid rgba(201,168,76,.2); flex-shrink:0; object-fit:cover; }
+.agent-info { flex:1; min-width:0; }
+.agent-name { font-size:13px; color:var(--gray-l); font-weight:500; }
+.agent-contact { font-size:11px; color:var(--gray); font-family:'DM Mono',monospace; margin-top:2px; }
+.agent-status { font-size:10px; font-family:'DM Mono',monospace; letter-spacing:.08em; padding:2px 8px; border:1px solid; }
+.agent-status.pending { color:var(--gray); border-color:rgba(136,136,136,.3); }
+.agent-status.sent { color:#4A9EFF; border-color:rgba(74,158,255,.3); }
+.agent-status.replied { color:#C9A84C; border-color:rgba(201,168,76,.3); }
+.agent-status.qualified { color:#4CAF50; border-color:rgba(76,175,80,.3); }
+.agent-status.locked { color:#FF6666; border-color:rgba(255,102,102,.3); }
+.agent-actions { display:flex; gap:6px; }
+.agent-btn { font-size:10px; font-family:'DM Mono',monospace; padding:4px 10px; background:transparent; border:1px solid rgba(201,168,76,.25); color:var(--gold); cursor:pointer; letter-spacing:.05em; }
+.agent-btn:hover { background:rgba(201,168,76,.08); }
+.agent-btn.danger { border-color:rgba(255,102,102,.25); color:#FF6666; }
+.agent-btn.danger:hover { background:rgba(255,102,102,.05); }
+.outreach-log-btn { font-size:10px; font-family:'DM Mono',monospace; padding:4px 10px; background:transparent; border:1px solid rgba(255,255,255,.1); color:var(--gray); cursor:pointer; }
+.outreach-log-btn:hover { border-color:var(--gold); color:var(--gold); }
+.lock-team-btn { font-size:11px; font-family:'DM Mono',monospace; padding:6px 14px; background:rgba(255,102,102,.08); border:1px solid rgba(255,102,102,.25); color:#FF6666; cursor:pointer; letter-spacing:.05em; }
+.lock-team-btn:hover { background:rgba(255,102,102,.15); }
+.primary-crown { font-size:12px; margin-left:4px; }
+.outreach-mini-log { padding:12px 20px 16px; background:var(--dark3); font-size:11px; font-family:'DM Mono',monospace; color:var(--gray); }
+.outreach-log-entry { padding:4px 0; border-bottom:1px solid rgba(255,255,255,.03); display:flex; gap:12px; }
+.outreach-log-entry:last-child { border-bottom:none; }
+
 /* ── REVENUE VIEW ── */
 .revenue-wrap { padding:24px 32px; }
 .rev-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; margin-bottom:24px; }
@@ -365,6 +402,7 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
     <button class="nav-tab" onclick="showView('tracker',this)">Daily Tracker</button>
     <button class="nav-tab" onclick="showView('clients',this)">Clients</button>
     <button class="nav-tab" onclick="showView('revenue',this)">Revenue</button>
+    <button class="nav-tab" onclick="showView('teams',this)">Teams & Outreach</button>
   </div>
   <div class="nav-right">
     <div class="nav-stat">
@@ -474,6 +512,28 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
           First payment logged here when it lands.
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- TEAMS VIEW -->
+<div id="view-teams" class="view">
+  <div class="teams-wrap" style="padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;color:#fff;">Teams & <em style="color:var(--gold);">Outreach</em></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-add" onclick="openAddAgent()">+ Add Agent</button>
+        <button class="btn-add" onclick="openAddTeam()">+ Add Team</button>
+      </div>
+    </div>
+    <!-- Search bar -->
+    <div style="margin-bottom:20px;">
+      <input class="form-input" id="teamsSearch" placeholder="Search by agent name, email, team..." oninput="filterTeams()" style="max-width:360px;"/>
+    </div>
+    <!-- Teams list -->
+    <div id="teamsBody"></div>
+    <div id="teamsEmpty" class="empty-state" style="display:none;">
+      <strong>No teams yet.</strong> Add agents to start tracking outreach and prevent duplicate contacts.
     </div>
   </div>
 </div>
@@ -622,6 +682,87 @@ html,body { background:var(--dark); color:var(--white); font-family:'Instrument 
   </div>
 </div>
 
+<!-- ADD TEAM MODAL -->
+<div class="modal-overlay" id="modalAddTeam">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Team</div>
+      <button class="modal-close" onclick="closeModal('modalAddTeam')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Team Name</label><input class="form-input" id="tm-name" placeholder="The Johnson Group"/></div>
+      <div class="form-group"><label class="form-label">Market</label><input class="form-input" id="tm-market" placeholder="Cambridge, MA"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalAddTeam')">Cancel</button>
+      <button class="btn-save" onclick="saveTeam()">Create Team</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD AGENT MODAL -->
+<div class="modal-overlay" id="modalAddAgent">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Agent</div>
+      <button class="modal-close" onclick="closeModal('modalAddAgent')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="ag-name" placeholder="Sarah Johnson"/></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ag-email" placeholder="sarah@kw.com"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ag-phone" placeholder="(617) 555-0100"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Team</label>
+        <select class="form-select" id="ag-team"><option value="">No team (solo)</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Zillow URL</label><input class="form-input" id="ag-zillow" placeholder="zillow.com/profile/..."/></div>
+        <div class="form-group"><label class="form-label">Instagram</label><input class="form-input" id="ag-ig" placeholder="@sarahjohnsonre"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalAddAgent')">Cancel</button>
+      <button class="btn-save" onclick="saveAgent()">Add Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG OUTREACH MODAL -->
+<div class="modal-overlay" id="modalOutreachLog">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log Outreach</div>
+      <button class="modal-close" onclick="closeModal('modalOutreachLog')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Contact Method</label>
+          <select class="form-select" id="ol-method">
+            <option value="dm">Instagram DM</option>
+            <option value="sms">SMS</option>
+            <option value="email">Email</option>
+            <option value="call">Phone Call</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="ol-date" type="date"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="ol-notes" placeholder="What was said, response, next step..."></textarea></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+        <input type="checkbox" id="ol-lock" style="accent-color:var(--gold);width:16px;height:16px;"/>
+        <label for="ol-lock" style="font-size:12px;color:var(--gray-l);cursor:pointer;">Lock agent + team from future outreach after logging</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalOutreachLog')">Cancel</button>
+      <button class="btn-save" onclick="saveOutreachLog()">Log Outreach</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 </div><!-- #mainApp -->
@@ -646,7 +787,7 @@ const TF = [
 ];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let leads=[], clients=[], payments=[], tracker={};
+let leads=[], clients=[], payments=[], tracker={}, teamsData=[], agentsData=[], outreachData=[], teamsFilter='';
 let currentWeek=0, detailLeadId=null;
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -669,7 +810,7 @@ async function bootApp() {
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   setDate();
-  await Promise.all([loadLeads(), loadClients(), loadPayments()]);
+  await Promise.all([loadLeads(), loadClients(), loadPayments(), loadTeamsData()]);
   updateNavStats();
   renderPipeline();
 }
@@ -731,6 +872,7 @@ function showView(name, btn) {
   if(name==='tracker')  loadTrackerWeek().then(renderTracker);
   if(name==='clients')  renderClients();
   if(name==='revenue')  renderRevenue();
+  if(name==='teams')    renderTeams();
 }
 
 function updateNavStats() {
@@ -1062,6 +1204,251 @@ function renderRevenue(){
       <div class="rev-log-amt">+${amt}</div>
     </div>`;
   }).join('');
+}
+
+// ── TEAMS & OUTREACH ──────────────────────────────────────────────────────────
+async function loadTeamsData() {
+  const [{ data: teams }, { data: agents }, { data: outreach }] = await Promise.all([
+    sb.from('teams').select('*').order('created_at', { ascending: false }),
+    sb.from('agents').select('*').order('created_at', { ascending: false }),
+    sb.from('outreach_log').select('*').order('contacted_at', { ascending: false }),
+  ]);
+  teamsData   = teams   || [];
+  agentsData  = agents  || [];
+  outreachData = outreach || [];
+}
+
+function filterTeams() {
+  teamsFilter = document.getElementById('teamsSearch').value.toLowerCase();
+  renderTeams();
+}
+
+function avatarUrl(name, email) {
+  const initials = name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=1A1A1A&color=C9A84C&bold=true&size=64&length=2`;
+}
+
+function renderTeams() {
+  const wrap  = document.getElementById('teamsBody');
+  const empty = document.getElementById('teamsEmpty');
+
+  let teams = teamsData;
+  let agents = agentsData;
+
+  if (teamsFilter) {
+    const q = teamsFilter;
+    const matchedAgentTeams = new Set(
+      agents.filter(a => (a.name||'').toLowerCase().includes(q) || (a.email||'').toLowerCase().includes(q))
+             .map(a => a.team_id).filter(Boolean)
+    );
+    teams = teams.filter(t =>
+      (t.team_name||'').toLowerCase().includes(q) || matchedAgentTeams.has(t.id)
+    );
+  }
+
+  // Solo agents (no team) — group under a virtual "Unassigned" section
+  const soloAgents = agents.filter(a => !a.team_id).filter(a =>
+    !teamsFilter || (a.name||'').toLowerCase().includes(teamsFilter) || (a.email||'').toLowerCase().includes(teamsFilter)
+  );
+
+  if (!teams.length && !soloAgents.length) {
+    wrap.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const teamCards = teams.map(team => {
+    const teamAgents = agents.filter(a => a.team_id === team.id);
+    const isLocked   = teamAgents.length > 0 && teamAgents.every(a => a.status === 'locked');
+    const hasContact = teamAgents.some(a => a.status !== 'pending');
+    const badgeCls   = isLocked ? 'locked' : hasContact ? 'active' : 'pending';
+    const badgeTxt   = isLocked ? 'LOCKED' : hasContact ? 'CONTACTED' : 'PENDING';
+    const teamLog    = outreachData.filter(o => o.team_id === team.id).slice(0, 3);
+
+    return `<div class="team-card">
+      <div class="team-card-header" onclick="toggleTeamCard('tc-${team.id}')">
+        <div>
+          <div class="team-name">${team.team_name}</div>
+          <div class="team-meta">${team.market||'Market unknown'} · ${teamAgents.length} agent${teamAgents.length!==1?'s':''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="team-badge ${badgeCls}">${badgeTxt}</span>
+          ${!isLocked ? `<button class="lock-team-btn" onclick="event.stopPropagation();lockTeam('${team.id}')">🔒 Lock Team</button>` : ''}
+        </div>
+      </div>
+      <div id="tc-${team.id}" class="team-agents" style="display:none;">
+        ${teamAgents.map(a => renderAgentRow(a, team)).join('') || '<div style="padding:16px 20px;font-size:12px;color:var(--gray);">No agents yet.</div>'}
+        ${teamLog.length ? `<div class="outreach-mini-log"><div style="color:var(--gold);margin-bottom:8px;letter-spacing:.1em;">OUTREACH LOG</div>${teamLog.map(o=>`<div class="outreach-log-entry"><span style="color:var(--gray-l);">${new Date(o.contacted_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span><span>${(o.contact_method||'').toUpperCase()}</span><span style="color:var(--gold);">${o.status}</span><span>${o.notes||''}</span></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  const soloCard = soloAgents.length ? `<div class="team-card">
+    <div class="team-card-header" onclick="toggleTeamCard('tc-solo')">
+      <div>
+        <div class="team-name">Unassigned Agents</div>
+        <div class="team-meta">No team assigned · ${soloAgents.length} agent${soloAgents.length!==1?'s':''}</div>
+      </div>
+    </div>
+    <div id="tc-solo" class="team-agents" style="display:none;">
+      ${soloAgents.map(a => renderAgentRow(a, null)).join('')}
+    </div>
+  </div>` : '';
+
+  wrap.innerHTML = teamCards.join('') + soloCard;
+}
+
+function renderAgentRow(agent, team) {
+  const isPrimary = team && team.primary_agent_id === agent.id;
+  const img = avatarUrl(agent.name, agent.email);
+  return `<div class="agent-row">
+    <img class="agent-avatar" src="${img}" alt="${agent.name}" onerror="this.style.display='none'"/>
+    <div class="agent-info">
+      <div class="agent-name">${agent.name}${isPrimary?'<span class="primary-crown" title="Primary contact">👑</span>':''}</div>
+      <div class="agent-contact">${[agent.email, agent.phone].filter(Boolean).join(' · ')||'No contact info'}</div>
+    </div>
+    <span class="agent-status ${agent.status||'pending'}">${(agent.status||'PENDING').toUpperCase()}</span>
+    <div class="agent-actions">
+      <button class="agent-btn" onclick="logOutreach('${agent.id}','${team?.id||''}')">Log Contact</button>
+      <button class="agent-btn" onclick="advanceAgentStatus('${agent.id}')">Advance</button>
+      ${(agent.status!=='locked') ? `<button class="agent-btn danger" onclick="lockAgent('${agent.id}','${team?.id||''}')">Lock</button>` : ''}
+      ${team && !isPrimary ? `<button class="agent-btn" onclick="setPrimary('${team.id}','${agent.id}')">Set Primary</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleTeamCard(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── ADD TEAM MODAL ─────────────────────────────────────────────────────────────
+function openAddTeam() { document.getElementById('modalAddTeam').classList.add('open'); }
+
+async function saveTeam() {
+  const name   = document.getElementById('tm-name').value.trim();
+  const market = document.getElementById('tm-market').value.trim();
+  if (!name) { toast('Team name required'); return; }
+  const { data, error } = await sb.from('teams').insert({ team_name: name, market: market || null }).select().single();
+  if (error) { toast('Error: ' + error.message); return; }
+  teamsData.unshift(data);
+  closeModal('modalAddTeam');
+  renderTeams();
+  toast('Team created: ' + name);
+  ['tm-name','tm-market'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ── ADD AGENT MODAL ────────────────────────────────────────────────────────────
+function openAddAgent() {
+  // Populate team dropdown
+  const sel = document.getElementById('ag-team');
+  sel.innerHTML = '<option value="">No team (solo)</option>' +
+    teamsData.map(t => `<option value="${t.id}">${t.team_name}</option>`).join('');
+  document.getElementById('modalAddAgent').classList.add('open');
+}
+
+async function saveAgent() {
+  const name  = document.getElementById('ag-name').value.trim();
+  const email = document.getElementById('ag-email').value.trim().toLowerCase() || null;
+  const phone = document.getElementById('ag-phone').value.trim() || null;
+  const team  = document.getElementById('ag-team').value || null;
+  const zillow = document.getElementById('ag-zillow').value.trim() || null;
+  const ig     = document.getElementById('ag-ig').value.trim() || null;
+  if (!name) { toast('Name required'); return; }
+  const { data, error } = await sb.from('agents').insert({ name, email, phone, team_id: team, zillow_url: zillow, instagram: ig }).select().single();
+  if (error) { toast('Error: ' + error.message); return; }
+  agentsData.unshift(data);
+  closeModal('modalAddAgent');
+  renderTeams();
+  toast('Agent added: ' + name);
+  ['ag-name','ag-email','ag-phone','ag-zillow','ag-ig'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ── LOG OUTREACH MODAL ────────────────────────────────────────────────────────
+let _outreachAgentId = '', _outreachTeamId = '';
+
+function logOutreach(agentId, teamId) {
+  _outreachAgentId = agentId;
+  _outreachTeamId  = teamId;
+  document.getElementById('ol-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('modalOutreachLog').classList.add('open');
+}
+
+async function saveOutreachLog() {
+  const method = document.getElementById('ol-method').value;
+  const notes  = document.getElementById('ol-notes').value.trim();
+  const locked = document.getElementById('ol-lock').checked;
+  const now    = new Date().toISOString();
+
+  const { data, error } = await sb.from('outreach_log').insert({
+    agent_id: _outreachAgentId || null,
+    team_id:  _outreachTeamId  || null,
+    contact_method: method,
+    contacted_at: now,
+    status: 'sent',
+    locked,
+    notes: notes || null,
+  }).select().single();
+
+  if (error) { toast('Error: ' + error.message); return; }
+  outreachData.unshift(data);
+
+  if (locked) {
+    await lockAgent(_outreachAgentId, _outreachTeamId);
+  } else {
+    // Just advance status to 'sent'
+    await sb.from('agents').update({ status: 'sent' }).eq('id', _outreachAgentId);
+    const a = agentsData.find(a => a.id === _outreachAgentId);
+    if (a) a.status = 'sent';
+  }
+
+  closeModal('modalOutreachLog');
+  renderTeams();
+  toast(locked ? 'Contact logged & locked' : 'Outreach logged');
+  ['ol-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ol-lock').checked = false;
+}
+
+async function lockAgent(agentId, teamId) {
+  await sb.from('agents').update({ status: 'locked' }).eq('id', agentId);
+  const a = agentsData.find(a => a.id === agentId);
+  if (a) a.status = 'locked';
+  if (teamId) {
+    // Lock all agents on the team
+    await sb.from('agents').update({ status: 'locked' }).eq('team_id', teamId);
+    agentsData.filter(a => a.team_id === teamId).forEach(a => a.status = 'locked');
+    toast('Team locked — all agents blocked from outreach');
+  }
+  renderTeams();
+}
+
+async function lockTeam(teamId) {
+  if (!confirm('Lock this entire team? No further outreach will be sent to any agent on this team.')) return;
+  await lockAgent(null, teamId);
+  // Insert lock record
+  await sb.from('outreach_log').insert({ team_id: teamId, contact_method: 'other', locked: true, notes: 'Team locked manually' });
+  toast('Team locked');
+}
+
+async function advanceAgentStatus(agentId) {
+  const ORDER = ['pending','sent','replied','qualified','closed'];
+  const agent = agentsData.find(a => a.id === agentId);
+  if (!agent || agent.status === 'locked' || agent.status === 'closed') return;
+  const next = ORDER[ORDER.indexOf(agent.status) + 1] || 'closed';
+  await sb.from('agents').update({ status: next }).eq('id', agentId);
+  agent.status = next;
+  renderTeams();
+  toast('Status → ' + next.toUpperCase());
+}
+
+async function setPrimary(teamId, agentId) {
+  await sb.from('teams').update({ primary_agent_id: agentId }).eq('id', teamId);
+  const t = teamsData.find(t => t.id === teamId);
+  if (t) t.primary_agent_id = agentId;
+  renderTeams();
+  toast('Primary contact set');
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────

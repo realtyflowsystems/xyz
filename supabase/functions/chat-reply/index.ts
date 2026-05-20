@@ -47,14 +47,14 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Store agent reply
+  // Store agent reply and reset auto_reply_sent so future visitor messages can re-trigger it
   await supabase.from('chat_messages').insert({
     session_id: session.id,
     sender: 'agent',
     body,
   });
   await supabase.from('chat_sessions')
-    .update({ last_message_at: new Date().toISOString() })
+    .update({ last_message_at: new Date().toISOString(), auto_reply_sent: false })
     .eq('id', session.id);
 
   // Email the visitor if they've left the page and have an email on file
