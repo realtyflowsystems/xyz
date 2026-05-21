@@ -1,6 +1,6 @@
 # RealtyFlow Systems — Session Memory
 
-_Last updated: May 20, 2026 (session 5)_
+_Last updated: May 21, 2026 (session 6)_
 
 ---
 
@@ -425,7 +425,7 @@ Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
 ### Blockers (must complete before launch)
 - [ ] **Add Telnyx secrets in Supabase** — `TELNYX_API_KEY`, `TELNYX_PHONE`, `ERICS_PHONE` (blocked on Telnyx account access — support ticket submitted)
 - [ ] **Set Telnyx incoming webhook** — Telnyx portal → Messaging Profile → webhook URL: `https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/chat-reply`
-- [ ] **End-to-end booking test** — fill out `/booking`, confirm email fires correctly
+- [x] **End-to-end booking test** — email fires ✅, lead/booking/enrollment in DB ✅, SMS skipped (no Telnyx yet — expected)
 - [ ] **End-to-end payment test** — Stripe test mode purchase → confirm portal email arrives → portal loads → thank-you page shows personalized name/tier
 
 ### Important (not day-one blockers)
@@ -437,10 +437,13 @@ Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
 
 ### Optional enhancements
 - [ ] **Retainer / add-on post-payment** — Protection Plan and AI Voice Qualifier use Stripe hosted confirmation (no `/thank-you` redirect)
+- [ ] **Duplicate sequence enrollment guard** — `booking-create` should cancel existing active enrollments before creating a new one (low priority, only affects repeated test bookings with same email)
 
 ---
 
 ## Completed ✅
+
+- ~~Session 6 fixes~~ — pg_cron jobs active (sms-reminder jobid 3, monthly-report jobid 4); booking slot picker auto-selects first date on load; .nojekyll added to main; GHL redirect fix live on main; PR #9 merged
 
 - ~~ROI Calculator~~ — interactive section on `index.html`; leak/recoverable numbers update live
 - ~~Exit-intent modal~~ — fires on mouse leave, once per session; POSTs to `lead-capture`; `/booking`, `/portal`, `/thank-you` excluded
