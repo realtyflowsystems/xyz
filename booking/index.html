@@ -211,6 +211,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   var activeDateBtn = null;
   var activeTimeBtn = null;
   var activeDate = null; // Date object
+  var firstDateBtn = null;
 
   // Build date buttons
   nextWeekdays(5).forEach(function(d) {
@@ -231,8 +232,12 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
       if(activeTimeBtn) { activeTimeBtn.classList.remove('active'); activeTimeBtn=null; }
       buildTimes(d);
     });
+    if (!firstDateBtn) firstDateBtn = btn;
     datesContainer.appendChild(btn);
   });
+
+  // Auto-select first date so time slots are visible on load
+  if (firstDateBtn) firstDateBtn.click();
 
   function buildTimes(d) {
     timesContainer.innerHTML = '';
