@@ -232,8 +232,8 @@ On `checkout.session.completed`:
 | Job | Schedule | Status |
 |---|---|---|
 | `sequence-runner` | `*/30 * * * *` | ✅ active |
-| `sms-reminder` | `*/5 * * * *` | ⚠️ needs to be configured |
-| `monthly-report` | `0 9 1 * *` | ⚠️ needs to be configured |
+| `sms-reminder` | `*/5 * * * *` | ✅ active (jobid 3) |
+| `monthly-report` | `0 9 1 * *` | ✅ active (jobid 4) |
 
 To configure in Supabase Dashboard → Database → Extensions → pg_cron:
 ```sql
@@ -429,7 +429,7 @@ Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
 - [ ] **End-to-end payment test** — Stripe test mode purchase → confirm portal email arrives → portal loads → thank-you page shows personalized name/tier
 
 ### Important (not day-one blockers)
-- [ ] **pg_cron for sms-reminder + monthly-report** — configure both jobs in Supabase Dashboard (SQL above)
+- [x] **pg_cron for sms-reminder + monthly-report** — both active (jobids 3 & 4)
 - [ ] **10DLC** — call IRS 1-800-829-4933 for EIN, then complete Telnyx brand + campaign registration
 - [ ] **Remove old Twilio secrets** — `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`, `TWILIO_PHONE` — once Telnyx confirmed working
 - [x] **Cancel Zoho SalesIQ** — widget replaced, subscription cancelled
