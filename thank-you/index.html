@@ -58,25 +58,11 @@ footer{padding:28px 60px;background:var(--dark2);border-top:1px solid rgba(255,2
     <div class="ty-eyebrow" id="tyEyebrow">Payment Confirmed</div>
     <h1 id="tyHeading">Welcome to<br><em>RealtyFlow Systems.</em></h1>
     <p class="ty-sub" id="tySub">Your investment is confirmed. Check your inbox — your portal link and onboarding details are on the way from <strong>erics@realtyflow.xyz</strong>. Check spam if you don't see it within 5 minutes.</p>
-
     <div class="ty-steps" id="tySteps">
-      <div class="ty-step">
-        <div class="ty-step-num">1</div>
-        <strong>Check Your Email</strong>
-        <span>Your portal link is unique to your account. Keep that email — it's how you'll access your dashboard.</span>
-      </div>
-      <div class="ty-step">
-        <div class="ty-step-num">2</div>
-        <strong>Onboarding Call</strong>
-        <span>Erics will reach out within 24 hours to schedule your kickoff call and get the build started.</span>
-      </div>
-      <div class="ty-step">
-        <div class="ty-step-num">3</div>
-        <strong>System Goes Live</strong>
-        <span>Your done-for-you revenue infrastructure is live within 5–7 business days.</span>
-      </div>
+      <div class="ty-step"><div class="ty-step-num">1</div><strong>Check Your Email</strong><span>Your portal link is unique to your account. Keep that email — it's how you'll access your dashboard.</span></div>
+      <div class="ty-step"><div class="ty-step-num">2</div><strong>Onboarding Call</strong><span>Erics will reach out within 24 hours to schedule your kickoff call and get the build started.</span></div>
+      <div class="ty-step"><div class="ty-step-num">3</div><strong>System Goes Live</strong><span>Your done-for-you revenue infrastructure is live within 5–7 business days.</span></div>
     </div>
-
     <div class="ty-divider"></div>
     <p class="ty-portal-note" id="tyPortalNote">Already have your portal link? <strong>Click it from your confirmation email</strong> to access your onboarding checklist and track your build progress.</p>
     <a href="mailto:erics@realtyflow.xyz?subject=Onboarding Question" class="ty-btn">Questions? Email Erics &rarr;</a>
@@ -108,83 +94,41 @@ footer{padding:28px 60px;background:var(--dark2);border-top:1px solid rgba(255,2
 <script>
 (function(){
   var EDGE = 'https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/checkout-info';
-  var TIER_LABELS = {
-    'Core': 'Core Speed System',
-    'Revenue Acceleration': 'Revenue Acceleration System',
-    'Team Infrastructure': 'Team Infrastructure System'
-  };
-
+  var TIER_LABELS = {'Core':'Core Speed System','Revenue Acceleration':'Revenue Acceleration System','Team Infrastructure':'Team Infrastructure System'};
   var STEPS = {
-    audit: [
-      { n:'1', title:'Watch for the intake form', body:'A short 5-minute questionnaire is on its way. Your answers are what the audit is built from.' },
-      { n:'2', title:'Audit delivered in 48 hours', body:'You\'ll receive a lead flow breakdown, follow-up gap analysis, conversion scorecard, and 90-day action plan.' },
-      { n:'3', title:'$497 applies as a credit', body:'If the audit reveals gaps our system closes, your investment rolls into any setup package — nothing lost.' }
+    audit:[
+      {n:'1',title:'Watch for the intake form',body:'A short 5-minute questionnaire is on its way. Your answers are what the audit is built from.'},
+      {n:'2',title:'Audit delivered in 48 hours',body:'You\'ll receive a lead flow breakdown, follow-up gap analysis, conversion scorecard, and 90-day action plan.'},
+      {n:'3',title:'$497 applies as a credit',body:'If the audit reveals gaps our system closes, your investment rolls into any setup package — nothing lost.'}
     ],
-    setup: [
-      { n:'1', title:'Check Your Email', body:'Your portal link is unique to your account. Keep that email — it\'s how you\'ll access your dashboard.' },
-      { n:'2', title:'Kickoff Call Within 24 Hours', body:'Erics will reach out personally to schedule your onboarding call and lock in your database details.' },
-      { n:'3', title:'System Goes Live in 5–7 Days', body:'Sub-60 second lead response active. Database reactivation running. You close deals — the infrastructure runs.' }
+    setup:[
+      {n:'1',title:'Check Your Email',body:'Your portal link is unique to your account. Keep that email — it\'s how you\'ll access your dashboard.'},
+      {n:'2',title:'Kickoff Call Within 24 Hours',body:'Erics will reach out personally to schedule your onboarding call and lock in your database details.'},
+      {n:'3',title:'System Goes Live in 5–7 Days',body:'Sub-60 second lead response active. Database reactivation running. You close deals — the infrastructure runs.'}
     ]
   };
-
-  function isAudit(tier, desc) {
-    var t = (tier || '').toLowerCase();
-    var d = (desc || '').toLowerCase();
-    return t.includes('audit') || d.includes('audit') || d.includes('revenue leak');
-  }
-
-  function renderSteps(steps) {
-    return steps.map(function(s) {
-      return '<div class="ty-step"><div class="ty-step-num">'+s.n+'</div><strong>'+s.title+'</strong><span>'+s.body+'</span></div>';
-    }).join('');
-  }
-
-  function applyData(data) {
-    var fname = data.fname || '';
-    var tier  = data.tier || '';
-    var desc  = data.description || '';
-    var audit = isAudit(tier, desc);
-
-    if (fname) {
-      document.getElementById('tyHeading').innerHTML = 'Welcome,<br><em>' + fname + '.</em>';
+  function isAudit(tier,desc){var t=(tier||'').toLowerCase();var d=(desc||'').toLowerCase();return t.includes('audit')||d.includes('audit')||d.includes('revenue leak');}
+  function renderSteps(steps){return steps.map(function(s){return '<div class="ty-step"><div class="ty-step-num">'+s.n+'</div><strong>'+s.title+'</strong><span>'+s.body+'</span></div>';}).join('');}
+  function applyData(data){
+    var fname=data.fname||'';var tier=data.tier||'';var desc=data.description||'';var audit=isAudit(tier,desc);
+    if(fname){document.getElementById('tyHeading').innerHTML='Welcome,<br><em>'+fname+'.</em>';}
+    var tierLabel=TIER_LABELS[tier]||(audit?'Revenue Leak Audit':(tier||'RealtyFlow Systems'));
+    if(tierLabel){document.getElementById('tyEyebrow').textContent=tierLabel;}
+    if(audit){
+      document.getElementById('tySub').innerHTML='Your audit is confirmed. Watch for the intake form in your inbox — it\'s coming from <strong>erics@realtyflow.xyz</strong>. Check spam if you don\'t see it within a few minutes.';
+      document.getElementById('tyPortalNote').innerHTML='Questions before your audit arrives? Reply to your confirmation email or reach out directly.';
+    }else{
+      document.getElementById('tySub').innerHTML='Your investment is confirmed'+(fname?', '+fname:'')+'. Check your inbox — your portal link and onboarding details are on the way from <strong>erics@realtyflow.xyz</strong>. Check spam if you don\'t see it within 5 minutes.';
     }
-
-    var tierLabel = TIER_LABELS[tier] || (audit ? 'Revenue Leak Audit' : (tier || 'RealtyFlow Systems'));
-    if (tierLabel) {
-      document.getElementById('tyEyebrow').textContent = tierLabel;
-    }
-
-    if (audit) {
-      document.getElementById('tySub').innerHTML =
-        'Your audit is confirmed. Watch for the intake form in your inbox — it\'s coming from <strong>erics@realtyflow.xyz</strong>. Check spam if you don\'t see it within a few minutes.';
-      document.getElementById('tyPortalNote').innerHTML =
-        'Questions before your audit arrives? Reply to your confirmation email or reach out directly.';
-    } else {
-      document.getElementById('tySub').innerHTML =
-        'Your investment is confirmed' + (fname ? ', ' + fname : '') + '. Check your inbox — your portal link and onboarding details are on the way from <strong>erics@realtyflow.xyz</strong>. Check spam if you don\'t see it within 5 minutes.';
-    }
-
-    document.getElementById('tySteps').innerHTML = renderSteps(audit ? STEPS.audit : STEPS.setup);
+    document.getElementById('tySteps').innerHTML=renderSteps(audit?STEPS.audit:STEPS.setup);
   }
-
-  function fetchWithRetry(sessionId, attempts) {
-    fetch(EDGE + '?session_id=' + encodeURIComponent(sessionId))
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        if (data.found) {
-          applyData(data);
-        } else if (attempts > 1) {
-          setTimeout(function(){ fetchWithRetry(sessionId, attempts - 1); }, 1500);
-        }
-      })
-      .catch(function(){
-        if (attempts > 1) setTimeout(function(){ fetchWithRetry(sessionId, attempts - 1); }, 1500);
-      });
+  function fetchWithRetry(sessionId,attempts){
+    fetch(EDGE+'?session_id='+encodeURIComponent(sessionId)).then(function(r){return r.json();}).then(function(data){
+      if(data.found){applyData(data);}else if(attempts>1){setTimeout(function(){fetchWithRetry(sessionId,attempts-1);},1500);}
+    }).catch(function(){if(attempts>1)setTimeout(function(){fetchWithRetry(sessionId,attempts-1);},1500);});
   }
-
-  var params = new URLSearchParams(window.location.search);
-  var sid    = params.get('session_id');
-  if (sid) fetchWithRetry(sid, 6);
+  var params=new URLSearchParams(window.location.search);var sid=params.get('session_id');
+  if(sid)fetchWithRetry(sid,6);
 })();
 </script>
 </body>

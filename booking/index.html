@@ -105,21 +105,17 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
       <div class="bk-what-item"><div class="bk-what-num">3</div><div class="bk-what-text"><strong>Show You What Recovery Looks Like</strong><span>Specific to Cambridge, Somerville, Newton, Brookline — not a generic demo.</span></div></div>
     </div>
     <div class="bk-assurance">
-      <strong>Before you book:</strong> Know your monthly lead volume, current avg. response time, and closings/month. That’s all you need. The rest is on us.
+      <strong>Before you book:</strong> Know your monthly lead volume, current avg. response time, and closings/month. That's all you need. The rest is on us.
     </div>
   </div>
   <div class="bk-right">
     <div class="bk-form-label">Select Your Time</div>
-
-    <!-- Slot Picker -->
     <div class="slot-picker" id="slotPicker">
       <div class="slot-dates" id="slotDates"></div>
       <div class="slot-times" id="slotTimes"></div>
       <div class="slot-selected-display" id="slotDisplay"></div>
-      <button type="button" class="slot-none-btn" id="slotNoneBtn">No preference — we’ll reach out within 24 hrs</button>
+      <button type="button" class="slot-none-btn" id="slotNoneBtn">No preference — we'll reach out within 24 hrs</button>
     </div>
-
-    <!-- Form Section -->
     <div class="bk-form-label" style="margin-top:32px;">Your Information</div>
     <div class="bk-form-wrapper">
       <form class="bk-form" id="bookingForm">
@@ -140,21 +136,16 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
         </div>
         <button type="submit" class="bk-form-submit" id="submitBtn">Book Your Audit</button>
       </form>
-
-      <!-- Loading State -->
       <div class="bk-loading" id="loadingState">
         <div class="bk-loading-spinner"></div>
         <p>Booking your audit...</p>
       </div>
-
-      <!-- Success State -->
       <div class="bk-success" id="successState">
         <div class="bk-success-check">✓</div>
-        <h2>You’re Booked.</h2>
-        <p>Check your email for a confirmation and calendar invite. Erics will connect with you at your scheduled time.<br><br>Come prepared with your monthly lead volume and current response time — we’ll do the rest.</p>
+        <h2>You're Booked.</h2>
+        <p>Check your email for a confirmation and calendar invite. Erics will connect with you at your scheduled time.<br><br>Come prepared with your monthly lead volume and current response time — we'll do the rest.</p>
       </div>
     </div>
-
     <div class="bk-consent">
       By booking you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.
       You consent to receive a confirmation email and optional SMS reminder for your scheduled call.
@@ -174,14 +165,12 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 
 <script>
 (function(){
-  // Cursor animation
   var dot=document.getElementById('rfDot'),ring=document.getElementById('rfRing'),mx=0,my=0,rx=0,ry=0;
   document.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
   (function a(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a);})();
   document.querySelectorAll('a').forEach(function(el){el.addEventListener('mouseenter',function(){ring.style.width='52px';ring.style.height='52px';});el.addEventListener('mouseleave',function(){ring.style.width='36px';ring.style.height='36px';});});
 
-  // ── Slot Picker ──────────────────────────────────────────────
-  var selectedSlot = null; // ISO string or null
+  var selectedSlot = null;
   var TIMES = [
     {label:'9:00 AM', h:9},
     {label:'10:30 AM', h:10, m:30},
@@ -195,7 +184,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
 
   function nextWeekdays(n) {
     var dates = [], d = new Date();
-    d.setDate(d.getDate()+1); // start tomorrow
+    d.setDate(d.getDate()+1);
     while(dates.length < n) {
       var day = d.getDay();
       if(day !== 0 && day !== 6) dates.push(new Date(d));
@@ -210,10 +199,9 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
   var noneBtn = document.getElementById('slotNoneBtn');
   var activeDateBtn = null;
   var activeTimeBtn = null;
-  var activeDate = null; // Date object
+  var activeDate = null;
   var firstDateBtn = null;
 
-  // Build date buttons
   nextWeekdays(5).forEach(function(d) {
     var btn = document.createElement('button');
     btn.type = 'button';
@@ -236,7 +224,6 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     datesContainer.appendChild(btn);
   });
 
-  // Auto-select first date so time slots are visible on load
   if (firstDateBtn) firstDateBtn.click();
 
   function buildTimes(d) {
@@ -244,7 +231,6 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     TIMES.forEach(function(t) {
       var dt = new Date(d);
       dt.setHours(t.h, t.m||0, 0, 0);
-      // Convert from ET to UTC offset (EST=-5, EDT=-4 depending on DST)
       var etOffset = isDST(dt) ? -4 : -5;
       var utcMs = dt.getTime() - etOffset*3600000;
       var iso = new Date(utcMs).toISOString();
@@ -281,61 +267,35 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     timesContainer.classList.remove('visible');
   });
 
-  // ── Form Submission ──────────────────────────────────────────
   var form=document.getElementById('bookingForm');
   var loading=document.getElementById('loadingState');
   var success=document.getElementById('successState');
 
   form.addEventListener('submit',function(e){
     e.preventDefault();
-
     var name=document.getElementById('name').value.trim();
     var email=document.getElementById('email').value.trim();
     var phone=document.getElementById('phone').value.trim();
-
     var isValid=true;
     ['name','email','phone'].forEach(function(field){
       var input=document.getElementById(field);
       var group=input.closest('.bk-form-group');
-      if(!input.value.trim()){
-        group.classList.add('error');
-        isValid=false;
-      }else{
-        group.classList.remove('error');
-      }
+      if(!input.value.trim()){group.classList.add('error');isValid=false;}else{group.classList.remove('error');}
     });
-
     if(!isValid) return;
-
     form.style.display='none';
     loading.style.display='block';
-
-    // Send raw phone — backend normalizePhone() handles E.164 formatting
-    var payload={
-      name:name,
-      email:email,
-      phone:phone,
-      source:'realtyflow.xyz/booking'
-    };
+    var payload={name:name,email:email,phone:phone,source:'realtyflow.xyz/booking'};
     if(selectedSlot) payload.slot_time = selectedSlot;
-
     fetch('https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/booking-create',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1Zm1jeW1hcmJrcmp6YXFhcHV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDQyMzMsImV4cCI6MjA5NDE4MDIzM30.LKDGO75T-ph4tKrSDMA7uXBSgcFgXAlAZzlENmDHQk8'},
       body:JSON.stringify(payload)
-    }).then(function(res){
-      return res.json();
-    }).then(function(data){
+    }).then(function(res){return res.json();}).then(function(data){
       loading.style.display='none';
-      if(data.error){
-        form.style.display='block';
-        alert('Booking failed: '+data.error);
-      }else{
-        success.style.display='block';
-      }
+      if(data.error){form.style.display='block';alert('Booking failed: '+data.error);}else{success.style.display='block';}
     }).catch(function(err){
-      form.style.display='block';
-      loading.style.display='none';
+      form.style.display='block';loading.style.display='none';
       alert('Booking failed. Please try again.');
       console.error(err);
     });
