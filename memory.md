@@ -1,6 +1,6 @@
 # RealtyFlow Systems — Session Memory
 
-_Last updated: May 21, 2026 (session 6)_
+_Last updated: May 24, 2026 (session 7)_
 
 ---
 
@@ -426,7 +426,7 @@ Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
 - [ ] **Add Telnyx secrets in Supabase** — `TELNYX_API_KEY`, `TELNYX_PHONE`, `ERICS_PHONE` (blocked on Telnyx account access — support ticket submitted)
 - [ ] **Set Telnyx incoming webhook** — Telnyx portal → Messaging Profile → webhook URL: `https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1/chat-reply`
 - [x] **End-to-end booking test** — email fires ✅, lead/booking/enrollment in DB ✅, SMS skipped (no Telnyx yet — expected)
-- [ ] **End-to-end payment test** — Stripe test mode purchase → confirm portal email arrives → portal loads → thank-you page shows personalized name/tier
+- [ ] **End-to-end payment test** — Stripe test mode purchase → confirm portal email arrives → portal loads → thank-you page shows personalized name/tier. **Status:** Stripe was verifying business website (user added `https://realtyflow.xyz`). Use test card `4242 4242 4242 4242` to run test.
 
 ### Important (not day-one blockers)
 - [x] **pg_cron for sms-reminder + monthly-report** — both active (jobids 3 & 4)
@@ -434,6 +434,7 @@ Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
 - [ ] **Remove old Twilio secrets** — `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`, `TWILIO_PHONE` — once Telnyx confirmed working
 - [x] **Cancel Zoho SalesIQ** — widget replaced, subscription cancelled
 - [x] **Cancel Twilio** — migrated to Telnyx
+- [ ] **Push all 8 HTML pages with `?v=2` to `main`** — forces Fastly CDN to serve updated `chat-widget.js` (which has GHL redirect fix). Files all have `?v=2` locally. Push is in progress (session 7).
 
 ### Optional enhancements
 - [ ] **Retainer / add-on post-payment** — Protection Plan and AI Voice Qualifier use Stripe hosted confirmation (no `/thank-you` redirect)
@@ -441,9 +442,18 @@ Required for A2P SMS (sequence-runner, chat-reply SMS notifications).
 
 ---
 
+## Known Issues / Root Causes
+
+- **GHL booking link appearing after hard refresh** — Root cause confirmed: Fastly CDN (GitHub Pages) is serving a cached version of `chat-widget.js` that predates the GHL fix (commit `00c1a72`). The `leadconnectorhq.com` URL does NOT exist in any HTML/JS source file — confirmed by exhaustive grep and GitHub code search. Fix: `?v=2` cache buster on all 8 pages forces CDN to fetch the new file. Push in progress.
+- **`/audit` and `/booking` 404 on direct URL** — Two-pronged fix applied to `main`: (1) `.nojekyll` file prevents Jekyll from interfering with directory routing; (2) `404.html` tries trailing-slash redirect before falling back to home. Non-blocking — users navigate via site links.
+
+---
+
 ## Completed ✅
 
-- ~~Session 6 fixes~~ — pg_cron jobs active (sms-reminder jobid 3, monthly-report jobid 4); booking slot picker auto-selects first date on load; .nojekyll added to main; GHL redirect fix live on main; PR #9 merged
+- ~~Session 7 fixes~~ — `?v=2` cache buster on all 8 HTML pages (push to main in progress); GHL CDN cache root cause identified and confirmed
+
+- ~~Session 6 fixes~~ — pg_cron jobs active (sms-reminder jobid 3, monthly-report jobid 4); booking slot picker auto-selects first date on load; `.nojekyll` added to main; GHL redirect fix live on main; `404.html` trailing-slash redirect; PR #9 merged
 
 - ~~ROI Calculator~~ — interactive section on `index.html`; leak/recoverable numbers update live
 - ~~Exit-intent modal~~ — fires on mouse leave, once per session; POSTs to `lead-capture`; `/booking`, `/portal`, `/thank-you` excluded
