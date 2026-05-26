@@ -32,7 +32,7 @@ create table if not exists bookings (
   status              text default 'confirmed',
   -- statuses: confirmed | completed | no_show | cancelled
   sms_reminder_sent   boolean default false,
-  zoom_link           text,
+  meeting_link        text,
   cal_event_id        text,
   notes               text,
   created_at          timestamptz default now(),
