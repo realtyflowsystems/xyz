@@ -1,0 +1,13 @@
+# Supabase CLI local cache (project ref, version metadata, pooler URL)
+supabase/.temp/
+
+# OS/editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
