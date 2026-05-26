@@ -231,9 +231,7 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
     TIMES.forEach(function(t) {
       var dt = new Date(d);
       dt.setHours(t.h, t.m||0, 0, 0);
-      var etOffset = isDST(dt) ? -4 : -5;
-      var utcMs = dt.getTime() - etOffset*3600000;
-      var iso = new Date(utcMs).toISOString();
+      var iso = dt.toISOString();
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'slot-time-btn';
@@ -249,12 +247,6 @@ body{background:var(--dark);color:var(--white);font-family:"DM Sans",sans-serif;
       timesContainer.appendChild(btn);
     });
     timesContainer.classList.add('visible');
-  }
-
-  function isDST(d) {
-    var jan = new Date(d.getFullYear(),0,1).getTimezoneOffset();
-    var jul = new Date(d.getFullYear(),6,1).getTimezoneOffset();
-    return Math.min(jan,jul) === d.getTimezoneOffset();
   }
 
   noneBtn.addEventListener('click', function() {
