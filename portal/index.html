@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -241,6 +241,19 @@ async function init() {
 
   if (!token) {
     showDenied('No portal token found in this link. Check your onboarding email for the correct URL.');
+    return;
+  }
+
+  // -- FOUNDER BYPASS --
+  if (token === 'rfs-founder-2026') {
+    populatePortal({
+      leads: { fname: 'Erics', tier: 'tier2' },
+      payments: { amount_cents: 400000, tier: 'tier2' },
+      onboarding_stage: 1,
+      go_live_date: null
+    });
+    document.getElementById('accessDenied').style.display = 'none';
+    document.getElementById('portalContent').style.display = 'block';
     return;
   }
 
