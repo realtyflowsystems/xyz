@@ -22,7 +22,7 @@
   'use strict';
 
   var BASE = 'https://wufmcymarbkrjzaqapuu.supabase.co/functions/v1';
-  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1Zm1jeW1hcmJrcmp6YXFhcHV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDQyMzMsImV4cCI6MjA5NDE4MDIzM30.LKDGO75T-ph4tKrSDMA7uXBSgcFgXAlAZzlENmDHQk8';
+  var ANON = 'sb_publishable_u0H1VuhN27xEDwLYUL4DIA_www1NJaS';
 
   var SK_KEY    = 'rfs_chat_sk';
   var NAME_KEY  = 'rfs_chat_name';
